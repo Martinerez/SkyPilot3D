@@ -1,0 +1,20 @@
+# Archivos de Visual Studio
+.vs/
+*.user
+*.suo
+*.vc.db
+*.opendb
+
+# Compilación
+bin/
+obj/
+x64/
+Debug/
+Release/
+
+# Archivos del sistema
+*.log
+*.tmp
+*.cache
+*.bak
+*.swp
