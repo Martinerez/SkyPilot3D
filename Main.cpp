@@ -9,6 +9,8 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include <iostream>
+#include "stb/stb_image.h"
+
 
 //Size of menu window
 const unsigned int WIDTH = 800;
@@ -19,6 +21,46 @@ const unsigned int HEIGHT = 800;
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
+
+
+float skyBoxVerticess [] =
+{
+    //Coordinates
+
+    -1.0f,  -1.0f,  1.0f,
+     1.0f,  -1.0f,  1.0f,
+     1.0f,  -1.0f, -1.0f,
+    -1.0f,  -1.0f, -1.0f,
+    -1.0f,   1.0f,  1.0f,
+     1.0f,   1.0f,  1.0f,
+     1.0f,   1.0f, -1.0f,
+    -1.0f,   1.0f, -1.0f
+};
+
+unsigned int skyBoxIndices[] = {
+
+    //Right
+    1, 2, 6,
+    6, 5, 1,
+    //Left
+    0, 4, 7,
+    7, 3, 0,
+    //Top
+    4, 5, 6,
+    6, 7, 4,
+    //Bottom
+    0, 3, 2,
+    2, 1, 0,
+    //Back
+    0, 1, 5,
+    5, 4, 0,
+    //Front
+    3, 7, 6,
+    6, 2, 3
+};
+
+
+
 
 int main() {
     //Initializing GLFW
@@ -75,6 +117,73 @@ int main() {
     glClearColor(0.6f, 1.0f, 0.6f, 1.0f);
     //Variable to know if we are on game mood
     bool isGameMode = false;
+
+    unsigned int skyBoxVao, skyBoxVBO, skyBoxEBO;
+    glGenVertexArrays(1, &skyBoxVao);
+    glGenBuffers(1, &skyBoxVBO);
+    glGenBuffers(1, &skyBoxEBO);
+    glBindVertexArray(skyBoxVao);
+    glBindBuffer(GL_ARRAY_BUFFER, skyBoxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyBoxVerticess), &skyBoxVerticess, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyBoxEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skyBoxIndices), &skyBoxIndices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    std::string parentDir = "./Resource Files/Textures/sky.jpg";
+
+
+    std::string FacesCubemap[6] = {
+
+        parentDir,
+        parentDir,
+        parentDir,
+        parentDir,
+        parentDir,
+        parentDir
+    };
+
+    unsigned int cubeMapTexture;
+    glGenTextures(1, &cubeMapTexture);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    for (unsigned int i = 0; i < 6; i++) {
+
+        int width, height, nrChannels;
+        unsigned char* data = stbi_load(FacesCubemap[i].c_str(), &width, &height, &nrChannels, 0);
+
+        if (data) {
+            stbi_set_flip_vertically_on_load(false);
+            glTexImage2D(
+
+                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                0,
+                GL_RGB,
+                width,
+                height,
+                0,
+                GL_RGB,
+                GL_UNSIGNED_BYTE,
+                data
+            );
+            stbi_image_free(data);
+
+        }
+        else {
+            std::cout << "Failed to load texture: " << FacesCubemap[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+
+
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
