@@ -9,6 +9,8 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include <iostream>
+#include "stb/stb_image.h"
+
 
 //Size of menu window
 const unsigned int WIDTH = 800;
@@ -19,6 +21,8 @@ const unsigned int HEIGHT = 800;
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
+
+
 
 int main() {
     //Initializing GLFW
@@ -75,6 +79,7 @@ int main() {
     glClearColor(0.6f, 1.0f, 0.6f, 1.0f);
     //Variable to know if we are on game mood
     bool isGameMode = false;
+
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
