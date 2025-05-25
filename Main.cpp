@@ -87,8 +87,8 @@ int main() {
     int screenWidth = mode->width;
     int screenHeight = mode->height;
 
-    int xpos = (screenWidth - WIDTH) / 2;
-    int ypos = (screenHeight - HEIGHT) / 2;
+    int xpos = (screenWidth - static_cast<int>(WIDTH)) / 2;
+    int ypos = (screenHeight - static_cast<int>(HEIGHT)) / 2;
 
     glfwSetWindowPos(window, xpos, ypos);
 
