@@ -138,8 +138,7 @@ int main()
 
 	//Replace this with your path (To the team)
 
-	std::string parentDir = "C:/Users/ashle/source/repos/SkyPilot3D/Resources";
-
+	std::string parentDir = "C:/Users/DELL 5590/Desktop/SkyPilot3D/Resources";
 	std::string facesCubemap[6] = {
 		parentDir + "/right.png",
 		parentDir + "/left.png",
@@ -223,7 +222,8 @@ int main()
 
 	ImGui::StyleColorsDark();
 
-
+	bool isSpanish = false;
+	static float brightness = 1.0f;
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -258,7 +258,7 @@ int main()
 		glfwGetWindowSize(window, &windowWidth, &windowHeight);
 
 		// main menu
-		ImVec2 menuSize(600, 300);
+		ImVec2 menuSize(600, 400);
 		ImVec2 menuPos((windowWidth - menuSize.x) / 2, (windowHeight - menuSize.y) / 2);
 		ImGui::SetNextWindowSize(menuSize);
 		ImGui::SetNextWindowPos(menuPos);
@@ -299,7 +299,7 @@ int main()
 			float centerX = (menuSize.x - buttonWidth) / 2;
 
 			ImGui::SetCursorPos(ImVec2(centerX, 100));
-			if (ImGui::Button("PLAY", ImVec2(buttonWidth, buttonHeight))) {
+			if (ImGui::Button(isSpanish ? "JUGAR" : "PLAY", ImVec2(buttonWidth, buttonHeight))) {
 				gameMood = true;
 				GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 				const GLFWvidmode* mode = glfwGetVideoMode(monitor);
@@ -311,11 +311,10 @@ int main()
 				height = mode->height;
 			}
 
-
 			// button "About the game"
 			ImGui::SetCursorPos(ImVec2(centerX, 160));
 			static bool showAbout = false;
-			if (ImGui::Button("About the game", ImVec2(buttonWidth, buttonHeight))) {
+			if (ImGui::Button(isSpanish ? "Acerca del juego" : "About the game", ImVec2(buttonWidth, buttonHeight))) {
 				showAbout = true;
 			}
 
@@ -327,37 +326,113 @@ int main()
 				showAbout = false;
 			}
 
-			// popup "How to play?"
 			if (ImGui::BeginPopupModal("How to play?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-
 				ImGui::TextColored(ImVec4(0.6f, 0.4f, 0.9f, 1.0f), "SkyPlane3D");
 				ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "Version 1.0");
 
-				/*
-				*ImGui::Text("SkyPlane3D");
-				ImGui::Text("Version 1.0");
-				*/
 				ImGui::Separator();
-				ImGui::Text("SkyPlane3D is an exciting third - person game where you control a plane \nsoaring above a city filled with obstacles.\n\n"
-					"To maneuver through the skies, use the following keys:\n"
-					"  - W to ascend\n"
-					"  - S to descend\n"
-					"  - A to go left\n"
-					"  - D to go right\n"
-					"  - G to start the game\n");
 
-				if (ImGui::Button("Close")) {
+				if (isSpanish) {
+					ImGui::Text("SkyPlane3D es un emocionante juego en tercera persona donde controlas un avion\n"
+						"que sobrevuela una ciudad llena de obstaculos.\n\n"
+						"Para maniobrar por los cielos, usa las siguientes teclas:\n"
+						"  - W para subir\n"
+						"  - S para bajar\n"
+						"  - A para ir a la izquierda\n"
+						"  - D para ir a la derecha\n"
+						"  - G para iniciar el juego\n");
+				}
+				else {
+					ImGui::Text("SkyPlane3D is an exciting third-person game where you control a plane\n"
+						"soaring above a city filled with obstacles.\n\n"
+						"To maneuver through the skies, use the following keys:\n"
+						"  - W to ascend\n"
+						"  - S to descend\n"
+						"  - A to go left\n"
+						"  - D to go right\n"
+						"  - G to start the game\n");
+				}
+
+				if (ImGui::Button(isSpanish ? "Cerrar" : "Close")) {
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::EndPopup();
-				//ImGui Frame
-
 			}
 
-			//For Sharon
+			static bool showOptions = false;
+
 			ImGui::SetCursorPos(ImVec2(centerX, 220));
-			if (ImGui::Button("Options", ImVec2(buttonWidth, buttonHeight))) {
-				// Actions for the button "options" can be added here
+			if (ImGui::Button(isSpanish ? "Opciones" : "Options", ImVec2(buttonWidth, buttonHeight))) {
+				showOptions = true;
+			}
+
+			if (showOptions) {
+				ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+				ImGui::OpenPopup("OPTIONS");
+				showOptions = false;
+			}
+
+			if (ImGui::BeginPopupModal("OPTIONS", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+				ImGui::TextColored(ImVec4(0.9f, 0.6f, 0.3f, 1.0f), isSpanish ? "Ajustes del juego" : "Game Settings");
+				ImGui::Separator();
+
+				if (ImGui::Button(isSpanish ? "Salir del juego" : "Exit the game")) {
+					exit(0);
+				}
+
+				ImGui::Spacing();
+
+				if (ImGui::Button(isSpanish ? "Cambiar idioma (Espanol / Ingles)" : "Change language (English / Spanish)")) {
+					isSpanish = !isSpanish;
+				}
+
+				ImGui::Spacing();
+
+				ImGui::Text(isSpanish ? "Brillo:" : "Brightness:");
+				//ImGui::SliderFloat("##brillo", &brightness, 0.0f, 1.0f, "%.2f");
+				ImGui::SliderFloat(isSpanish ? "Brillo" : "Brightness", &brightness, 0.0f, 1.0f);
+
+				ImGui::Spacing();
+
+				if (ImGui::Button(isSpanish ? "Cerrar" : "Close")) {
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::EndPopup();
+			}
+
+			static bool showCredits = false;
+
+			ImGui::SetCursorPos(ImVec2(centerX, 280));
+			if (ImGui::Button(isSpanish ? "Creditos" : "Credits", ImVec2(buttonWidth, buttonHeight))) {
+				showCredits = true;
+			}
+
+			// popup "credits"
+			if (showCredits) {
+				ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+				ImGui::OpenPopup(isSpanish ? "Creditos" : "Credits");
+				showCredits = false;
+			}
+
+			if (ImGui::BeginPopupModal(isSpanish ? "Creditos" : "Credits", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+				ImGui::TextColored(ImVec4(0.8f, 0.6f, 1.0f, 1.0f), isSpanish ? "Desarrollado por: " : "Developed by:");
+				ImGui::Separator();
+				ImGui::Text(" - Avalos Jasmin");
+				ImGui::Text(" - Urbina Ashley");
+				ImGui::Text(" - Briceno Sharon");
+				ImGui::Text(" - Martinez Rebeca");
+
+
+				ImGui::Spacing();
+				ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.0f, 1.0f), isSpanish ? "Grupo de Clase: 3T1-COM-S" : "Class group: 3T1-COM-S");
+
+				ImGui::Spacing();
+				if (ImGui::Button(isSpanish ? "Close" : "Cerrar")) {
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::EndPopup();
 			}
 
 			ImGui::End();
@@ -372,10 +447,13 @@ int main()
 		camera.Inputs(window);
 		camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
-		//Skybox
+		//Skybox 
 
 		glDepthFunc(GL_LEQUAL);
 		skyboxShader.Activate();
+
+		glUniform1f(glGetUniformLocation(skyboxShader.ID, "brightness"), brightness);
+
 		glm::mat4 view = glm::mat4(glm::mat3(glm::lookAt(camera.Position, camera.Position + camera.Orientation, camera.Up)));
 		glm::mat4 projection = glm::perspective(glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
 		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
