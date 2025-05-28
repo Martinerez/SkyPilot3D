@@ -1,23 +1,14 @@
-//WE start including the libraries we will use
+//------- Ignore this ----------
+#include<filesystem>
+namespace fs = std::filesystem;
+//------------------------------
 
+//WE start including the libraries we will use
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>  
-#include <glm/gtc/type_ptr.hpp>       
+#include"Model.h"    
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
-#include <iostream>
-#include "stb/stb_image.h"
-#include"Texture.h"
-#include"shaderClass.h"
-#include"VAO.h"
-#include"VBO.h"
-#include"EBO.h"
-#include"Camera.h"
-#include<filesystem>
 
 
 int width = 800;
@@ -134,11 +125,14 @@ int main()
 	glFrontFace(GL_CCW);
 
 	//Creates camera object
-	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
+	Camera camera(width, height, glm::vec3(0.0f, -1.0f, -15.0f));
 
 	//Replace this with your path (To the team)
 
-	std::string parentDir = "C:/Users/DELL 5590/Desktop/SkyPilot3D/Resources";
+	std::string parentDir = "C:/Users/Rebeca/source/repos/repos2/Resources";
+	std::string parentD = (fs::current_path().fs::path::parent_path()).string();
+	std::string modelPath = "/repos2/Resources/Models/airplane/scene.gltf";
+
 	std::string facesCubemap[6] = {
 		parentDir + "/right.png",
 		parentDir + "/left.png",
@@ -148,6 +142,8 @@ int main()
 		parentDir + "/back.png"
 	};
 
+	// Load in models
+	Model model((parentD + modelPath).c_str());
 
 	//Variables to create periodic event for FPS displaying
 	double prevTime = 0.0;
@@ -446,6 +442,9 @@ int main()
 
 		camera.Inputs(window);
 		camera.updateMatrix(45.0f, 0.1f, 100.0f);
+
+		// Draw the normal model
+		model.Draw(shaderProgram, camera);
 
 		//Skybox 
 
