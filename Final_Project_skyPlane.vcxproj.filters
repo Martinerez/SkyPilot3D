@@ -1451,16 +1451,16 @@
     </None>
     <None Include=".gitignore" />
     <None Include="imgui.ini" />
-    <None Include="default.frag">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="default.vert">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
     <None Include="light.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="light.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="skybox.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="skybox.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>
@@ -1469,6 +1469,24 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="sky.jpg">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="..\SkyPilot3D\Resources\back.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="..\SkyPilot3D\Resources\bottom.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="..\SkyPilot3D\Resources\front.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="..\SkyPilot3D\Resources\left.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="..\SkyPilot3D\Resources\right.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="..\SkyPilot3D\Resources\top.png">
       <Filter>Resource Files\Textures</Filter>
     </Image>
   </ItemGroup>

@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\Admin\Documents\OpenGL\FinalProject\SkyPilot3D\dependencies\include;C:\Users\ashle\source\repos\SkyPilot3D\dependencies\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\Admin\Documents\OpenGL\FinalProject\SkyPilot3D\dependencies\lib;C:\Users\ashle\source\repos\SkyPilot3D\dependencies\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\ashle\source\repos\Upload\dependencies\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\ashle\source\repos\Upload\dependencies\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>C:\Users\Admin\Documents\OpenGL\FinalProject\SkyPilot3D\dependencies\include;C:\Users\ashle\source\repos\Final_Project_skyPlane\Final_Project_skyPlane\dependencies\include;$(IncludePath)</IncludePath>
@@ -480,8 +480,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
-    <None Include="default.frag" />
-    <None Include="default.vert" />
     <None Include="dependencies\include\glm\detail\func_common.inl" />
     <None Include="dependencies\include\glm\detail\func_common_simd.inl" />
     <None Include="dependencies\include\glm\detail\func_exponential.inl" />
@@ -624,11 +622,19 @@
     <None Include="imgui.ini" />
     <None Include="light.frag" />
     <None Include="light.vert" />
+    <None Include="skybox.frag" />
+    <None Include="skybox.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="dependencies\include\glm\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\SkyPilot3D\Resources\back.png" />
+    <Image Include="..\SkyPilot3D\Resources\bottom.png" />
+    <Image Include="..\SkyPilot3D\Resources\front.png" />
+    <Image Include="..\SkyPilot3D\Resources\left.png" />
+    <Image Include="..\SkyPilot3D\Resources\right.png" />
+    <Image Include="..\SkyPilot3D\Resources\top.png" />
     <Image Include="sky.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
