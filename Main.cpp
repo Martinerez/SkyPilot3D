@@ -64,10 +64,12 @@ int main() {
     }
 
     //Configurating ImGui 
-
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // Set the font size
+    io.FontGlobalScale = 1.5f;  // new change to increase font size
 
     ImGui::StyleColorsDark();
 
@@ -77,43 +79,74 @@ int main() {
 
     //Main loop
     glClearColor(0.6f, 1.0f, 0.6f, 1.0f);
+
     //Variable to know if we are on game mood
     bool isGameMode = false;
-
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        //ImGui Frame
+        // ImGui Frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Menu in the center
+        // Set ImGui style
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        // Set custom colors for the ImGui style
+        style.Colors[ImGuiCol_WindowBg] = ImVec4(0.15f, 0.15f, 0.2f, 0.95f);
+        style.Colors[ImGuiCol_Button] = ImVec4(0.4f, 0.3f, 0.8f, 1.0f);
+        style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.5f, 0.4f, 0.9f, 1.0f);
+        style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.3f, 0.2f, 0.7f, 1.0f);
+        style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+        style.Colors[ImGuiCol_Separator] = ImVec4(0.6f, 0.6f, 0.7f, 0.5f);
+
+        style.FrameRounding = 6.0f;
+        style.WindowRounding = 8.0f;
+        style.FrameBorderSize = 0.0f;
+        style.PopupRounding = 6.0f;
+
+        style.ItemSpacing = ImVec2(10, 20);
+        style.WindowPadding = ImVec2(20, 20);
+        style.Colors[ImGuiCol_WindowBg].w = 0.9f;
+
+        // get window size
         int windowWidth, windowHeight;
         glfwGetWindowSize(window, &windowWidth, &windowHeight);
 
-        //Menu size
-        ImVec2 menuSize(500, 300);  
-        //Menu centered
-        ImVec2 menuPos((windowWidth - menuSize.x) / 2, (windowHeight - menuSize.y) / 2);  
-
+        // main menu
+        ImVec2 menuSize(600, 300);
+        ImVec2 menuPos((windowWidth - menuSize.x) / 2, (windowHeight - menuSize.y) / 2);
         ImGui::SetNextWindowSize(menuSize);
         ImGui::SetNextWindowPos(menuPos);
 
-        //Bottoms color
+        //set the color of the menu buttons 
         ImGui::GetStyle().Colors[ImGuiCol_Button] = ImVec4(0.843f, 0.502f, 1.0f, 1.0f);  // #d780ff
         ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered] = ImVec4(0.9f, 0.6f, 1.0f, 1.0f);
         ImGui::GetStyle().Colors[ImGuiCol_ButtonActive] = ImVec4(0.7f, 0.3f, 1.0f, 1.0f);
 
+
+        // menu background color
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.95f));
+
         if (!isGameMode) {
-        //Visible window
             ImGui::Begin("SkyPlane3D Menu", nullptr,
-             ImGuiWindowFlags_NoResize |
-             ImGuiWindowFlags_NoCollapse |
-             ImGuiWindowFlags_NoSavedSettings
+                ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoSavedSettings |
+                ImGuiWindowFlags_NoTitleBar
             );
 
+            // title
+            ImGui::SetCursorPosY(20);
+            ImGui::SetCursorPosX((menuSize.x - ImGui::CalcTextSize("SkyPlane3D").x) / 2);
+            ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "SkyPlane3D");
+
+            // separation line
+            ImGui::Separator();
+
+            // center the buttons
             float buttonWidth = 280.0f;
             float buttonHeight = 40.0f;
             float centerX = (menuSize.x - buttonWidth) / 2;
@@ -124,26 +157,67 @@ int main() {
                 glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
                 isGameMode = true;
                 glfwSetWindowTitle(window, "SkyPlane3D - Game Mode");
-
-                //white background
-                glClearColor(1.0f, 1.0f, 1.0f, 1.0f);  
+                glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
             }
 
-            //About bottom centered
+            // button "About the game"
             ImGui::SetCursorPos(ImVec2(centerX, 160));
-            if (ImGui::Button("About...", ImVec2(buttonWidth, buttonHeight))) {
-               
-                //What about bottom will do
+            static bool showAbout = false;
+            if (ImGui::Button("About the game", ImVec2(buttonWidth, buttonHeight))) {
+                showAbout = true;
+            }
+
+            // popup "About"
+            if (showAbout) {
+                ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                ImGui::OpenPopup("How to play?");
+                // reset the flag to close the popup after opening
+                showAbout = false;
+            }
+
+            // popup "How to play?"
+            if (ImGui::BeginPopupModal("How to play?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+                ImGui::TextColored(ImVec4(0.6f, 0.4f, 0.9f, 1.0f), "SkyPlane3D");
+                ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "Version 1.0");
+
+                /*
+                *ImGui::Text("SkyPlane3D");
+                ImGui::Text("Version 1.0");
+                */
+                ImGui::Separator();
+                ImGui::Text("SkyPlane3D is an exciting third - person game where you control a plane \nsoaring above a city filled with obstacles.\n\n"
+                    "To maneuver through the skies, use the following keys:\n"
+                    "  - W to ascend\n"
+                    "  - S to descend\n"
+                    "  - A to go left\n"
+                    "  - D to go right\n"
+                    "  - G to start the game\n");
+
+                if (ImGui::Button("Close")) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+
+
+            //For Sharon
+            ImGui::SetCursorPos(ImVec2(centerX, 220));
+            if (ImGui::Button("Options", ImVec2(buttonWidth, buttonHeight))) {
+                // Actions for the button "options" can be added here
             }
 
             ImGui::End();
+
         }
+
+        ImGui::PopStyleColor();
 
         // Rendering
         ImGui::Render();
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         glfwSwapBuffers(window);
     }
+
 }
