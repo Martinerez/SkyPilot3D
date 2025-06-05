@@ -1,10 +1,15 @@
 //------- Ignore this ----------
+
+#define SDL_MAIN_HANDLED
 #include<filesystem>
 namespace fs = std::filesystem;
 //------------------------------
 
+#include <SDL2/SDL.h>
 //WE start including the libraries we will use
 #define GLM_ENABLE_EXPERIMENTAL
+
+
 #include"Model.h"    
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
@@ -52,9 +57,74 @@ unsigned int skyboxIndices[] = {
 };
 
 
+//AUDIO CONFIGURATIONS PT.1 BEGIN
 
-int main()
+Uint8* wavBuffer = nullptr;
+Uint32 wavLength = 0;
+Uint32 wavPosition = 0;
+SDL_AudioDeviceID device = 0;
+
+void audioCallback(void* userdata, Uint8* stream, int len) {
+	Uint32 remaining = wavLength - wavPosition;
+	Uint32 toCopy = (remaining > (Uint32)len) ? (Uint32)len : remaining;
+
+	if (toCopy > 0) {
+		SDL_memcpy(stream, wavBuffer + wavPosition, toCopy);
+		wavPosition += toCopy;
+	}
+	if (toCopy < (Uint32)len) {
+		SDL_memset(stream + toCopy, 0, len - toCopy);
+	}
+}
+
+void playSound() {
+	//restart audio playback
+	wavPosition = 0;  
+	//Cleans the audio queue and enqueues the audio data for playback
+	SDL_ClearQueuedAudio(device); 
+	SDL_QueueAudio(device, wavBuffer, wavLength); 
+	//Play the audio device
+	SDL_PauseAudioDevice(device, 0); 
+}
+
+//END PT.1
+
+
+int main(int argc, char* argv[])
 {
+	//AUDIO CONFIGURATIONS PT.2 BEGIN
+
+	if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+		std::cerr << "Error SDL_Init: " << SDL_GetError() << "\n";
+		return -1;
+	}
+
+	SDL_AudioSpec wavSpec;
+	SDL_AudioSpec obtainedSpec;
+
+	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/SKYPILOT_ACTUAL/x64/Debug/assets/415804__sunsai__mushroom-background-music.wav", &wavSpec, &wavBuffer, &wavLength))
+	{
+		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
+		SDL_Quit();
+		return -1;
+	}
+
+	device = SDL_OpenAudioDevice(nullptr, 0, &wavSpec, &obtainedSpec, 0);
+
+	if (device == 0) {
+		std::cerr << "Error SDL_OpenAudioDevice: " << SDL_GetError() << "\n";
+		SDL_free(wavBuffer);
+		SDL_Quit();
+		return -1;
+	}
+
+	//Start paused
+	SDL_PauseAudioDevice(device, 1); 
+
+	//AUDIO PT.2 END
+
+
+
 	//Initializing GLFW
 	glfwInit();
 
@@ -71,6 +141,7 @@ int main()
 		glfwTerminate();
 		return -1;
 	}
+	
 
 	//CENTERING the window in the screen
 
@@ -129,9 +200,9 @@ int main()
 
 	//Replace this with your path (To the team)
 
-	std::string parentDir = "C:/Users/Rebeca/source/repos/repos2/Resources";
+	std::string parentDir = "C:/Users/ashle/source/repos/SKYPILOT_ACTUAL/Resources";
 	std::string parentD = (fs::current_path().fs::path::parent_path()).string();
-	std::string modelPath = "/repos2/Resources/Models/airplane/scene.gltf";
+	std::string modelPath = "/SKYPILOT_ACTUAL/Resources/Models/airplane/scene.gltf";
 
 	std::string facesCubemap[6] = {
 		parentDir + "/right.png",
@@ -296,6 +367,9 @@ int main()
 
 			ImGui::SetCursorPos(ImVec2(centerX, 100));
 			if (ImGui::Button(isSpanish ? "JUGAR" : "PLAY", ImVec2(buttonWidth, buttonHeight))) {
+				
+				playSound();
+
 				gameMood = true;
 				GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 				const GLFWvidmode* mode = glfwGetVideoMode(monitor);
@@ -306,6 +380,8 @@ int main()
 				width = mode->width;
 				height = mode->height;
 			}
+
+
 
 			// button "About the game"
 			ImGui::SetCursorPos(ImVec2(centerX, 160));
