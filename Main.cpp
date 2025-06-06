@@ -9,12 +9,15 @@ namespace fs = std::filesystem;
 //WE start including the libraries we will use
 #define GLM_ENABLE_EXPERIMENTAL
 
+#include <assimp/Importer.hpp>
+#include<assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #include"Model.h"    
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
-
+#include <chrono>
 
 int width = 800;
 int height = 800;
@@ -64,6 +67,11 @@ Uint32 wavLength = 0;
 Uint32 wavPosition = 0;
 SDL_AudioDeviceID device = 0;
 
+Uint8* clickBuffer = nullptr;
+Uint32 clickLength = 0;
+SDL_AudioDeviceID clickDevice = 0;
+
+
 void audioCallback(void* userdata, Uint8* stream, int len) {
 	Uint32 remaining = wavLength - wavPosition;
 	Uint32 toCopy = (remaining > (Uint32)len) ? (Uint32)len : remaining;
@@ -77,7 +85,7 @@ void audioCallback(void* userdata, Uint8* stream, int len) {
 	}
 }
 
-void playSound() {
+void playAdventureSound() {
 	//restart audio playback
 	wavPosition = 0;  
 	//Cleans the audio queue and enqueues the audio data for playback
@@ -86,6 +94,13 @@ void playSound() {
 	//Play the audio device
 	SDL_PauseAudioDevice(device, 0); 
 }
+
+void playClickSound() {
+	SDL_ClearQueuedAudio(clickDevice);
+	SDL_QueueAudio(clickDevice, clickBuffer, clickLength);
+	SDL_PauseAudioDevice(clickDevice, 0);
+}
+
 
 //END PT.1
 
@@ -102,7 +117,7 @@ int main(int argc, char* argv[])
 	SDL_AudioSpec wavSpec;
 	SDL_AudioSpec obtainedSpec;
 
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/SKYPILOT_ACTUAL/x64/Debug/assets/415804__sunsai__mushroom-background-music.wav", &wavSpec, &wavBuffer, &wavLength))
+	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/skyPilot3/assets/415804__sunsai__mushroom-background-music.wav", &wavSpec, &wavBuffer, &wavLength))
 	{
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 		SDL_Quit();
@@ -119,7 +134,16 @@ int main(int argc, char* argv[])
 	}
 
 	//Start paused
-	SDL_PauseAudioDevice(device, 1); 
+	SDL_PauseAudioDevice(device, 1);
+
+	SDL_AudioSpec clickSpec;
+	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/skyPilot3/assets/mixkit-quick-win-video-game-notification-269.wav", &clickSpec, &clickBuffer, &clickLength)) {
+		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
+	}
+	clickDevice = SDL_OpenAudioDevice(nullptr, 0, &clickSpec, nullptr, 0);
+
+
+
 
 	//AUDIO PT.2 END
 
@@ -300,6 +324,40 @@ int main(int argc, char* argv[])
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+		//Configuring the chronometer that will appear while playing
+
+		static auto startTime = std::chrono::high_resolution_clock::now();
+
+		if (gameMood) {
+
+			//Calculating the time since the start of the game
+
+			auto now = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - startTime);
+
+			int total_seconds = duration.count();
+			int minutes = total_seconds / 60;
+			int seconds = total_seconds % 60;
+			
+			
+
+			ImGui::SetNextWindowPos(ImVec2(10, 10));
+			ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_Always);
+			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(186, 150, 211, 255)); 
+			
+			ImGui::Begin("Chronometer", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+			ImGui::Text("Time: %02d:%02d", minutes, seconds);
+			ImGui::PopStyleColor();
+			ImGui::End();
+		}
+		else {
+			// Reiniciamos el cronómetro si salimos del modo juego
+			startTime = std::chrono::high_resolution_clock::now();
+		}
+		//end configuration of the chronometer
+
+
 		// Set ImGui style
 		ImGuiStyle& style = ImGui::GetStyle();
 
@@ -339,12 +397,22 @@ int main(int argc, char* argv[])
 		// menu background color
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.95f));
 
-		//Showing the menu if we are not on game mood
+		//Allowing the camera to move only if we are in game mood
+		if (gameMood)
+		{
+			camera.Inputs(window);
+		}
 
+
+
+		//Showing the menu if we are not on game mood
+		
 		if (!gameMood)
 		{
 			glClearColor(0.6f, 1.0f, 0.6f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+			
+
 			ImGui::Begin("SkyPlane3D Menu", nullptr,
 				ImGuiWindowFlags_NoResize |
 				ImGuiWindowFlags_NoCollapse |
@@ -366,9 +434,12 @@ int main(int argc, char* argv[])
 			float centerX = (menuSize.x - buttonWidth) / 2;
 
 			ImGui::SetCursorPos(ImVec2(centerX, 100));
+			
+
 			if (ImGui::Button(isSpanish ? "JUGAR" : "PLAY", ImVec2(buttonWidth, buttonHeight))) {
 				
-				playSound();
+				playClickSound();
+				playAdventureSound();
 
 				gameMood = true;
 				GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -387,6 +458,7 @@ int main(int argc, char* argv[])
 			ImGui::SetCursorPos(ImVec2(centerX, 160));
 			static bool showAbout = false;
 			if (ImGui::Button(isSpanish ? "Acerca del juego" : "About the game", ImVec2(buttonWidth, buttonHeight))) {
+				playClickSound();
 				showAbout = true;
 			}
 
@@ -426,6 +498,7 @@ int main(int argc, char* argv[])
 				}
 
 				if (ImGui::Button(isSpanish ? "Cerrar" : "Close")) {
+					playClickSound();
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::EndPopup();
@@ -435,6 +508,7 @@ int main(int argc, char* argv[])
 
 			ImGui::SetCursorPos(ImVec2(centerX, 220));
 			if (ImGui::Button(isSpanish ? "Opciones" : "Options", ImVec2(buttonWidth, buttonHeight))) {
+				playClickSound();
 				showOptions = true;
 			}
 
@@ -449,12 +523,14 @@ int main(int argc, char* argv[])
 				ImGui::Separator();
 
 				if (ImGui::Button(isSpanish ? "Salir del juego" : "Exit the game")) {
+					playClickSound();
 					exit(0);
 				}
 
 				ImGui::Spacing();
 
 				if (ImGui::Button(isSpanish ? "Cambiar idioma (Espanol / Ingles)" : "Change language (English / Spanish)")) {
+					playClickSound();
 					isSpanish = !isSpanish;
 				}
 
@@ -467,6 +543,7 @@ int main(int argc, char* argv[])
 				ImGui::Spacing();
 
 				if (ImGui::Button(isSpanish ? "Cerrar" : "Close")) {
+					playClickSound();
 					ImGui::CloseCurrentPopup();
 				}
 
@@ -477,6 +554,7 @@ int main(int argc, char* argv[])
 
 			ImGui::SetCursorPos(ImVec2(centerX, 280));
 			if (ImGui::Button(isSpanish ? "Creditos" : "Credits", ImVec2(buttonWidth, buttonHeight))) {
+				playClickSound();
 				showCredits = true;
 			}
 
@@ -484,6 +562,7 @@ int main(int argc, char* argv[])
 			if (showCredits) {
 				ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 				ImGui::OpenPopup(isSpanish ? "Creditos" : "Credits");
+				playClickSound();
 				showCredits = false;
 			}
 
@@ -501,6 +580,7 @@ int main(int argc, char* argv[])
 
 				ImGui::Spacing();
 				if (ImGui::Button(isSpanish ? "Close" : "Cerrar")) {
+					playClickSound();
 					ImGui::CloseCurrentPopup();
 				}
 
@@ -516,7 +596,7 @@ int main(int argc, char* argv[])
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		camera.Inputs(window);
+		//camera.Inputs(window);
 		camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
 		// Draw the normal model
@@ -549,6 +629,11 @@ int main(int argc, char* argv[])
 
 
 	//We delete all the objects we created
+	SDL_CloseAudioDevice(device);
+	SDL_CloseAudioDevice(clickDevice);
+	SDL_FreeWAV(wavBuffer);
+	SDL_FreeWAV(clickBuffer);
+	SDL_Quit();
 
 	shaderProgram.Delete();
 
