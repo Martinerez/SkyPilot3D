@@ -22,6 +22,9 @@
     <Filter Include="Header Files\Docs.h">
       <UniqueIdentifier>{a20be83e-287c-484a-9dd8-01160c18a25e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Otros">
+      <UniqueIdentifier>{3a1e4f77-06e8-4600-bb70-eb6386c51cca}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -89,13 +92,27 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="dependencies\lib\glew32.lib" />
-    <Library Include="dependencies\lib\glew32s.lib" />
-    <Library Include="dependencies\lib\glfw3.lib" />
-    <Library Include="dependencies\lib\SDL2.lib" />
-    <Library Include="dependencies\lib\SDL2main.lib" />
-    <Library Include="dependencies\lib\SDL2test.lib" />
-    <Library Include="dependencies\lib\assimp-vc143-mt.lib" />
+    <Library Include="dependencies\lib\assimp-vc143-mt.lib">
+      <Filter>Resource Files\Otros</Filter>
+    </Library>
+    <Library Include="dependencies\lib\glew32.lib">
+      <Filter>Resource Files\Otros</Filter>
+    </Library>
+    <Library Include="dependencies\lib\glew32s.lib">
+      <Filter>Resource Files\Otros</Filter>
+    </Library>
+    <Library Include="dependencies\lib\glfw3.lib">
+      <Filter>Resource Files\Otros</Filter>
+    </Library>
+    <Library Include="dependencies\lib\SDL2.lib">
+      <Filter>Resource Files\Otros</Filter>
+    </Library>
+    <Library Include="dependencies\lib\SDL2main.lib">
+      <Filter>Resource Files\Otros</Filter>
+    </Library>
+    <Library Include="dependencies\lib\SDL2test.lib">
+      <Filter>Resource Files\Otros</Filter>
+    </Library>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dependencies\include\glad\glad.h">
@@ -1993,8 +2010,6 @@
     <None Include="dependencies\include\glm\gtx\wrap.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include=".gitignore" />
-    <None Include="imgui.ini" />
     <None Include="light.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
@@ -2007,10 +2022,6 @@
     <None Include="skybox.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="default.frag" />
-    <None Include="default.vert" />
-    <None Include="dependencies\lib\SDL2.dll" />
-    <None Include="dependencies\lib\SDL2.pdb" />
     <None Include="dependencies\include\assimp\color4.inl">
       <Filter>Header Files</Filter>
     </None>
@@ -2035,10 +2046,27 @@
     <None Include="dependencies\include\assimp\vector3.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="dependencies\lib\assimp-vc143-mt.exp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="dependencies\include\glm\CMakeLists.txt" />
+    <None Include="default.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="default.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include=".gitignore">
+      <Filter>Resource Files\Otros</Filter>
+    </None>
+    <None Include="dependencies\lib\assimp-vc143-mt.exp">
+      <Filter>Resource Files\Otros</Filter>
+    </None>
+    <None Include="imgui.ini">
+      <Filter>Resource Files\Otros</Filter>
+    </None>
+    <None Include="dependencies\lib\SDL2.dll">
+      <Filter>Resource Files\Otros</Filter>
+    </None>
+    <None Include="dependencies\lib\SDL2.pdb">
+      <Filter>Resource Files\Otros</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="sky.jpg">
@@ -2062,5 +2090,10 @@
     <Image Include="..\SkyPilot3D\Resources\top.png">
       <Filter>Resource Files\Textures</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="dependencies\include\glm\CMakeLists.txt">
+      <Filter>Resource Files\Otros</Filter>
+    </Text>
   </ItemGroup>
 </Project>

@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 	SDL_AudioSpec wavSpec;
 	SDL_AudioSpec obtainedSpec;
 
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/skyPilot3/assets/415804__sunsai__mushroom-background-music.wav", &wavSpec, &wavBuffer, &wavLength))
+	if (!SDL_LoadWAV("C:/Users/Rebeca/source/repos/2.0/assets/415804__sunsai__mushroom-background-music.wav", &wavSpec, &wavBuffer, &wavLength))
 	{
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 		SDL_Quit();
@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
 	SDL_PauseAudioDevice(device, 1);
 
 	SDL_AudioSpec clickSpec;
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/skyPilot3/assets/mixkit-quick-win-video-game-notification-269.wav", &clickSpec, &clickBuffer, &clickLength)) {
+	if (!SDL_LoadWAV("C:/Users/Rebeca/source/repos/2.0/assets/mixkit-quick-win-video-game-notification-269.wav", &clickSpec, &clickBuffer, &clickLength)) {
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 	}
 	clickDevice = SDL_OpenAudioDevice(nullptr, 0, &clickSpec, nullptr, 0);
@@ -224,9 +224,9 @@ int main(int argc, char* argv[])
 
 	//Replace this with your path (To the team)
 
-	std::string parentDir = "C:/Users/ashle/source/repos/SKYPILOT_ACTUAL/Resources";
+	std::string parentDir = "C:/Users/Rebeca/source/repos/2.0/Resources";
 	std::string parentD = (fs::current_path().fs::path::parent_path()).string();
-	std::string modelPath = "/SKYPILOT_ACTUAL/Resources/Models/airplane/scene.gltf";
+	std::string modelPath = "/2.0/Resources/Models/airplane/scene.gltf";
 
 	std::string facesCubemap[6] = {
 		parentDir + "/right.png",
@@ -480,8 +480,6 @@ int main(int argc, char* argv[])
 					ImGui::Text("SkyPlane3D es un emocionante juego en tercera persona donde controlas un avion\n"
 						"que sobrevuela una ciudad llena de obstaculos.\n\n"
 						"Para maniobrar por los cielos, usa las siguientes teclas:\n"
-						"  - W para subir\n"
-						"  - S para bajar\n"
 						"  - A para ir a la izquierda\n"
 						"  - D para ir a la derecha\n"
 						"  - G para iniciar el juego\n");
@@ -490,8 +488,6 @@ int main(int argc, char* argv[])
 					ImGui::Text("SkyPlane3D is an exciting third-person game where you control a plane\n"
 						"soaring above a city filled with obstacles.\n\n"
 						"To maneuver through the skies, use the following keys:\n"
-						"  - W to ascend\n"
-						"  - S to descend\n"
 						"  - A to go left\n"
 						"  - D to go right\n"
 						"  - G to start the game\n");
