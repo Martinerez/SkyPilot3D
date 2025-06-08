@@ -1,4 +1,4 @@
-//------- Ignore this ----------
+//
 
 #define SDL_MAIN_HANDLED
 #include<filesystem>
@@ -87,12 +87,12 @@ void audioCallback(void* userdata, Uint8* stream, int len) {
 
 void playAdventureSound() {
 	//restart audio playback
-	wavPosition = 0;  
+	wavPosition = 0;
 	//Cleans the audio queue and enqueues the audio data for playback
-	SDL_ClearQueuedAudio(device); 
-	SDL_QueueAudio(device, wavBuffer, wavLength); 
+	SDL_ClearQueuedAudio(device);
+	SDL_QueueAudio(device, wavBuffer, wavLength);
 	//Play the audio device
-	SDL_PauseAudioDevice(device, 0); 
+	SDL_PauseAudioDevice(device, 0);
 }
 
 void playClickSound() {
@@ -104,6 +104,20 @@ void playClickSound() {
 
 //END PT.1
 
+//Variable to know if the game was paused
+bool gameisPaused = false;
+
+//Variable 
+static auto startTime = std::chrono::high_resolution_clock::now();
+
+
+//function for restarting the game
+void restartGame() {
+
+	startTime = std::chrono::high_resolution_clock::now();
+
+	gameisPaused = false;
+}
 
 int main(int argc, char* argv[])
 {
@@ -117,7 +131,7 @@ int main(int argc, char* argv[])
 	SDL_AudioSpec wavSpec;
 	SDL_AudioSpec obtainedSpec;
 
-	if (!SDL_LoadWAV("C:/Users/Rebeca/source/repos/2.0/assets/415804__sunsai__mushroom-background-music.wav", &wavSpec, &wavBuffer, &wavLength))
+	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/test/assets/415804__sunsai__mushroom-background-music.wav", &wavSpec, &wavBuffer, &wavLength))
 	{
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 		SDL_Quit();
@@ -137,17 +151,15 @@ int main(int argc, char* argv[])
 	SDL_PauseAudioDevice(device, 1);
 
 	SDL_AudioSpec clickSpec;
-	if (!SDL_LoadWAV("C:/Users/Rebeca/source/repos/2.0/assets/mixkit-quick-win-video-game-notification-269.wav", &clickSpec, &clickBuffer, &clickLength)) {
+
+	//REPLACE WITH YOUR PATH (MESSAGE TO THE TEAM)
+
+	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/test/assets/mixkit-quick-win-video-game-notification-269.wav", &clickSpec, &clickBuffer, &clickLength)) {
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 	}
 	clickDevice = SDL_OpenAudioDevice(nullptr, 0, &clickSpec, nullptr, 0);
 
-
-
-
 	//AUDIO PT.2 END
-
-
 
 	//Initializing GLFW
 	glfwInit();
@@ -165,7 +177,7 @@ int main(int argc, char* argv[])
 		glfwTerminate();
 		return -1;
 	}
-	
+
 
 	//CENTERING the window in the screen
 
@@ -224,9 +236,9 @@ int main(int argc, char* argv[])
 
 	//Replace this with your path (To the team)
 
-	std::string parentDir = "C:/Users/Rebeca/source/repos/2.0/Resources";
+	std::string parentDir = "C:/Users/ashle/source/repos/SKYPILOT_ACTUAL/Resources";
 	std::string parentD = (fs::current_path().fs::path::parent_path()).string();
-	std::string modelPath = "/2.0/Resources/Models/airplane/scene.gltf";
+	std::string modelPath = "/SKYPILOT_ACTUAL/Resources/Models/airplane/scene.gltf";
 
 	std::string facesCubemap[6] = {
 		parentDir + "/right.png",
@@ -306,8 +318,6 @@ int main(int argc, char* argv[])
 	//Variable to know if we are on game mood
 	bool gameMood = false;
 
-
-
 	// Set the font size
 	io.FontGlobalScale = 1.5f;  // new change to increase font size
 
@@ -315,6 +325,12 @@ int main(int argc, char* argv[])
 
 	bool isSpanish = false;
 	static float brightness = 1.0f;
+	bool gamePaused = false;
+
+
+	//Time played
+	int accumulatedSeconds = 0;
+	auto lastUpdateTime = startTime;
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -326,8 +342,6 @@ int main(int argc, char* argv[])
 
 		//Configuring the chronometer that will appear while playing
 
-		static auto startTime = std::chrono::high_resolution_clock::now();
-
 		if (gameMood) {
 
 			//Calculating the time since the start of the game
@@ -338,24 +352,100 @@ int main(int argc, char* argv[])
 			int total_seconds = duration.count();
 			int minutes = total_seconds / 60;
 			int seconds = total_seconds % 60;
-			
-			
+
 
 			ImGui::SetNextWindowPos(ImVec2(10, 10));
 			ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_Always);
-			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(186, 150, 211, 255)); 
-			
+			ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(186, 150, 211, 255));
+
 			ImGui::Begin("Chronometer", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
 			ImGui::Text("Time: %02d:%02d", minutes, seconds);
 			ImGui::PopStyleColor();
+
 			ImGui::End();
+
+			//end configuration of the chronometer
+
+			//Pause bottom start 
+			// Our pause bottom is the M key
+		  //Static variable to keep track of the previous state of the key
+			static bool m_wasPressed = false;
+
+			//We get the current state of the key
+
+			bool m_pressed = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
+
+			//Only toggle the pause state if the key was just pressed 
+
+			if (m_pressed && !m_wasPressed) {
+				gameisPaused = !gameisPaused;
+				playClickSound();
+			}
+
+			//Update the previous state of the key
+			m_wasPressed = m_pressed;
+
+			//Menu that appears when the game is paused
+			if (gameisPaused)
+			{
+
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				ImVec2 pauseMenuSize(500, 350);
+				ImVec2 pauseMenuPos((width - pauseMenuSize.x) / 2, (height - pauseMenuSize.y) / 2);
+				ImGui::SetNextWindowSize(pauseMenuSize);
+				ImGui::SetNextWindowPos(pauseMenuPos);
+				ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.95f));
+
+
+				ImGui::Begin("Pause Menu", nullptr,
+					ImGuiWindowFlags_NoResize |
+					ImGuiWindowFlags_NoCollapse |
+					ImGuiWindowFlags_NoSavedSettings |
+					ImGuiWindowFlags_NoTitleBar
+				);
+
+				ImGui::SetCursorPosY(20);
+				ImGui::SetCursorPosX((pauseMenuSize.x - ImGui::CalcTextSize("Juego en pausa").x) / 2);
+				ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.7f, 1.0f), isSpanish ? "Juego en pausa" : "Game Paused");
+				ImGui::Separator();
+
+				float buttonWidth = 260.0f;
+				float buttonHeight = 40.0f;
+				float centerX = (pauseMenuSize.x - buttonWidth) / 2;
+
+				ImGui::SetCursorPos(ImVec2(centerX, 100));
+				if (ImGui::Button(isSpanish ? "Continuar" : "Resume", ImVec2(buttonWidth, buttonHeight))) {
+					playClickSound();
+					gameisPaused = false;
+				}
+
+
+				ImGui::SetCursorPos(ImVec2(centerX, 160));
+				if (ImGui::Button(isSpanish ? "Reiniciar" : "Restart", ImVec2(buttonWidth, buttonHeight))) {
+					playClickSound();
+					restartGame();
+					gameisPaused = false;
+				}
+
+				ImGui::SetCursorPos(ImVec2(centerX, 220));
+				if (ImGui::Button(isSpanish ? "Salir del juego" : "Exit Game", ImVec2(buttonWidth, buttonHeight))) {
+					playClickSound();
+					glfwSetWindowShouldClose(window, GLFW_TRUE);
+				}
+
+				ImGui::End();
+				ImGui::PopStyleColor();
+			}
+
+
+			//End configuration of the pause bottom
 		}
+
 		else {
-			// Reiniciamos el cronómetro si salimos del modo juego
+
 			startTime = std::chrono::high_resolution_clock::now();
 		}
-		//end configuration of the chronometer
 
 
 		// Set ImGui style
@@ -406,12 +496,12 @@ int main(int argc, char* argv[])
 
 
 		//Showing the menu if we are not on game mood
-		
+
 		if (!gameMood)
 		{
 			glClearColor(0.6f, 1.0f, 0.6f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
-			
+
 
 			ImGui::Begin("SkyPlane3D Menu", nullptr,
 				ImGuiWindowFlags_NoResize |
@@ -434,10 +524,10 @@ int main(int argc, char* argv[])
 			float centerX = (menuSize.x - buttonWidth) / 2;
 
 			ImGui::SetCursorPos(ImVec2(centerX, 100));
-			
+
 
 			if (ImGui::Button(isSpanish ? "JUGAR" : "PLAY", ImVec2(buttonWidth, buttonHeight))) {
-				
+
 				playClickSound();
 				playAdventureSound();
 
@@ -480,6 +570,8 @@ int main(int argc, char* argv[])
 					ImGui::Text("SkyPlane3D es un emocionante juego en tercera persona donde controlas un avion\n"
 						"que sobrevuela una ciudad llena de obstaculos.\n\n"
 						"Para maniobrar por los cielos, usa las siguientes teclas:\n"
+						"  - W para subir\n"
+						"  - S para bajar\n"
 						"  - A para ir a la izquierda\n"
 						"  - D para ir a la derecha\n"
 						"  - G para iniciar el juego\n");
@@ -488,6 +580,8 @@ int main(int argc, char* argv[])
 					ImGui::Text("SkyPlane3D is an exciting third-person game where you control a plane\n"
 						"soaring above a city filled with obstacles.\n\n"
 						"To maneuver through the skies, use the following keys:\n"
+						"  - W to ascend\n"
+						"  - S to descend\n"
 						"  - A to go left\n"
 						"  - D to go right\n"
 						"  - G to start the game\n");
@@ -639,5 +733,7 @@ int main(int argc, char* argv[])
 
 	glfwTerminate();
 	return 0;
+
+
 
 }
