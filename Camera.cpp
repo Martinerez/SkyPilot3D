@@ -51,7 +51,7 @@ void Camera::Inputs(GLFWwindow* window)
 		Position.z = glm::clamp(Position.z, minBounds.z, maxBounds.z);
 	}
 
-	
+
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	{
@@ -92,9 +92,9 @@ void Camera::Inputs(GLFWwindow* window)
 
 		Position.x = target.x + radius * sin(glm::radians(angle));
 		Position.z = target.z + radius * cos(glm::radians(angle));
-		Position.y = defaultPosition.y; 
+		Position.y = defaultPosition.y;
 
-	    Orientation = glm::normalize(target - Position);
+		Orientation = glm::normalize(target - Position);
 
 		glfwSetCursorPos(window, width / 2, height / 2);
 	}
