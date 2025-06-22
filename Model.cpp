@@ -11,8 +11,22 @@ Model::Model(const char* file)
 	data = getData();
 
 	// Traverse all nodes
-	traverseNode(0);
+	//traverseNode(0);
+	glm::mat4 correction = glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f), glm::vec3(0, 0, 1));
+	traverseNode(0, correction);
 }
+
+Model::Model(const char* file, glm::mat4 transform)
+{
+	std::string text = get_file_contents(file);
+	JSON = json::parse(text);
+
+	Model::file = file;
+	data = getData();
+
+	traverseNode(0, transform);  // Usamos la transformación proporcionada
+}
+
 
 void Model::Draw(Shader& shader, Camera& camera)
 {
@@ -22,6 +36,15 @@ void Model::Draw(Shader& shader, Camera& camera)
 		meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i]);
 	}
 }
+
+void Model::Draw(Shader& shader, Camera& camera, const glm::mat4& externalTransform)
+{
+	for (unsigned int i = 0; i < meshes.size(); i++)
+	{
+		meshes[i].Mesh::Draw(shader, camera, externalTransform);
+	}
+}
+
 
 void Model::loadMesh(unsigned int indMesh)
 {
@@ -105,7 +128,8 @@ void Model::traverseNode(unsigned int nextNode, glm::mat4 matrix)
 	sca = glm::scale(sca, scale);
 
 	// Multiply all matrices together
-	glm::mat4 matNextNode = matrix * matNode * trans * rot * sca;
+	glm::mat4 matNextNode = matrix * trans * rot * sca * matNode;
+
 
 	// Check if the node contains a mesh and if it does load it
 	if (node.find("mesh") != node.end())
@@ -154,7 +178,7 @@ std::vector<float> Model::getFloats(json accessor)
 
 	// Get properties from the bufferView
 	json bufferView = JSON["bufferViews"][buffViewInd];
-	unsigned int byteOffset = bufferView["byteOffset"];
+	unsigned int byteOffset = bufferView.value("byteOffset", 0u);
 
 	// Interpret the type and store it into numPerVert
 	unsigned int numPerVert;
@@ -167,9 +191,9 @@ std::vector<float> Model::getFloats(json accessor)
 	// Go over all the bytes in the data at the correct place using the properties from above
 	unsigned int beginningOfData = byteOffset + accByteOffset;
 	unsigned int lengthOfData = count * 4 * numPerVert;
-	for (unsigned int i = beginningOfData; i < beginningOfData + lengthOfData; i += 4)
+	for (unsigned int i = beginningOfData; i < beginningOfData + lengthOfData; i)
 	{
-		unsigned char bytes[] = { data[i], data[i + 1], data[i + 2], data[i + 3] };
+		unsigned char bytes[] = { data[i++], data[i++], data[i++], data[i++] };
 		float value;
 		std::memcpy(&value, bytes, sizeof(float));
 		floatVec.push_back(value);
@@ -190,15 +214,15 @@ std::vector<GLuint> Model::getIndices(json accessor)
 
 	// Get properties from the bufferView
 	json bufferView = JSON["bufferViews"][buffViewInd];
-	unsigned int byteOffset = bufferView["byteOffset"];
+	unsigned int byteOffset = bufferView.value("byteOffset", 0u);
 
 	// Get indices with regards to their type: unsigned int, unsigned short, or short
 	unsigned int beginningOfData = byteOffset + accByteOffset;
 	if (componentType == 5125)
 	{
-		for (unsigned int i = beginningOfData; i < byteOffset + accByteOffset + count * 4; i += 4)
+		for (unsigned int i = beginningOfData; i < byteOffset + accByteOffset + count * 4; i)
 		{
-			unsigned char bytes[] = { data[i], data[i + 1], data[i + 2], data[i + 3] };
+			unsigned char bytes[] = { data[i++], data[i++], data[i++], data[i++] };
 			unsigned int value;
 			std::memcpy(&value, bytes, sizeof(unsigned int));
 			indices.push_back((GLuint)value);
@@ -206,9 +230,9 @@ std::vector<GLuint> Model::getIndices(json accessor)
 	}
 	else if (componentType == 5123)
 	{
-		for (unsigned int i = beginningOfData; i < byteOffset + accByteOffset + count * 2; i += 2)
+		for (unsigned int i = beginningOfData; i < byteOffset + accByteOffset + count * 2; i)
 		{
-			unsigned char bytes[] = { data[i], data[i + 1] };
+			unsigned char bytes[] = { data[i++], data[i++] };
 			unsigned short value;
 			std::memcpy(&value, bytes, sizeof(unsigned short));
 			indices.push_back((GLuint)value);
@@ -216,9 +240,9 @@ std::vector<GLuint> Model::getIndices(json accessor)
 	}
 	else if (componentType == 5122)
 	{
-		for (unsigned int i = beginningOfData; i < byteOffset + accByteOffset + count * 2; i += 2)
+		for (unsigned int i = beginningOfData; i < byteOffset + accByteOffset + count * 2; i)
 		{
-			unsigned char bytes[] = { data[i], data[i + 1] };
+			unsigned char bytes[] = { data[i++], data[i++] };
 			short value;
 			std::memcpy(&value, bytes, sizeof(short));
 			indices.push_back((GLuint)value);
@@ -304,49 +328,28 @@ std::vector<Vertex> Model::assembleVertices
 
 std::vector<glm::vec2> Model::groupFloatsVec2(std::vector<float> floatVec)
 {
-	const unsigned int floatsPerVector = 2;
-	
 	std::vector<glm::vec2> vectors;
-	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
+	for (int i = 0; i < floatVec.size(); i)
 	{
-		vectors.push_back(glm::vec2(0, 0));
-
-		for (unsigned int j = 0; j < floatsPerVector; j++)
-		{
-			vectors.back()[j] = floatVec[i + j];
-		}
+		vectors.push_back(glm::vec2(floatVec[i++], floatVec[i++]));
 	}
 	return vectors;
 }
 std::vector<glm::vec3> Model::groupFloatsVec3(std::vector<float> floatVec)
 {
-	const unsigned int floatsPerVector = 3;
-
 	std::vector<glm::vec3> vectors;
-	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
+	for (int i = 0; i < floatVec.size(); i)
 	{
-		vectors.push_back(glm::vec3(0, 0, 0));
-
-		for (unsigned int j = 0; j < floatsPerVector; j++)
-		{
-			vectors.back()[j] = floatVec[i + j];
-		}
+		vectors.push_back(glm::vec3(floatVec[i++], floatVec[i++], floatVec[i++]));
 	}
 	return vectors;
 }
 std::vector<glm::vec4> Model::groupFloatsVec4(std::vector<float> floatVec)
 {
-	const unsigned int floatsPerVector = 4;
-
 	std::vector<glm::vec4> vectors;
-	for (unsigned int i = 0; i < floatVec.size(); i += floatsPerVector)
+	for (int i = 0; i < floatVec.size(); i)
 	{
-		vectors.push_back(glm::vec4(0, 0, 0, 0));
-
-		for (unsigned int j = 0; j < floatsPerVector; j++)
-		{
-			vectors.back()[j] = floatVec[i + j];
-		}
+		vectors.push_back(glm::vec4(floatVec[i++], floatVec[i++], floatVec[i++], floatVec[i++]));
 	}
 	return vectors;
 }

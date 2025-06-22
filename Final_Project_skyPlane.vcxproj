@@ -172,6 +172,7 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="shaderClass.cpp" />
+    <ClCompile Include="Source.cpp" />
     <ClCompile Include="stb.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="VAO.cpp" />
@@ -844,6 +845,10 @@
     <Text Include="dependencies\include\glm\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\..\..\Downloads\LABPGMODELO\LABPGMODELO\models\airplane\baseColor.png" />
+    <Image Include="..\..\..\Downloads\LABPGMODELO\LABPGMODELO\models\airplane\colorBase.png" />
+    <Image Include="..\..\..\Downloads\LABPGMODELO\LABPGMODELO\models\airplane\diffuse.png" />
+    <Image Include="..\..\..\Downloads\LABPGMODELO\LABPGMODELO\models\airplane\specular.png" />
     <Image Include="..\SkyPilot3D\Resources\back.png" />
     <Image Include="..\SkyPilot3D\Resources\bottom.png" />
     <Image Include="..\SkyPilot3D\Resources\front.png" />
