@@ -493,13 +493,15 @@ auto pauseStart = startTime;
 std::chrono::duration<double> pausedDuration(0);
 std::chrono::duration<double> accumulatedTime(0);
 
+bool gameOverSoundPlayed = false;
+
+
 
 //function for restarting the game
-void restartGame(glm::vec3& posAvion, std::vector<glm::vec3>& obstaculos,
-	bool& gameIsOver, bool& showGameOverWindowFlag,
-	std::chrono::duration<double>& finalTime)
+void restartGame(glm::vec3& posAvion, std::vector<glm::vec3>& obstaculos, bool& gameIsOver, bool& showGameOverWindowFlag, std::chrono::duration<double>& finalTime,
+	bool& gameMood)
 {
-	//Restart airplame pos
+	gameMood = true;
 
 	posAvion = glm::vec3(0.0f, 0.0f, -50.0f);
 
@@ -516,9 +518,10 @@ void restartGame(glm::vec3& posAvion, std::vector<glm::vec3>& obstaculos,
 	gameIsOver = false;
 	showGameOverWindowFlag = false;
 	finalTime = std::chrono::duration<double>::zero();
-
-	stopGameOverSound();     
-	playAdventureSound();   
+	stopGameOverSound();
+	playAdventureSound();
+	
+	gameOverSoundPlayed = false;
 }
 
 
@@ -826,34 +829,47 @@ int main(int argc, char* argv[])
 			
 				float obstacleSpeed = 20.0f;
 
+				// Agregar delay de gracia antes de detectar colisiones
+				auto tiempoActual = std::chrono::high_resolution_clock::now();
+				std::chrono::duration<double> tiempoDesdeInicio = tiempoActual - startTime;
+
 				for (auto& pos : obstaculos)
 				{
 					pos.z += obstacleSpeed * deltaTime;
 
 					if (pos.z > posAvion.z + 5.0f)
 					{
-						pos.z = posAvion.z - 50.0f; 
+						pos.z = posAvion.z - 50.0f;
 						float margin = 0.3f;
-						pos.x = posAvion.x + (((rand() % 100) / 100.0f) * 2 - 1) * margin; 
+						pos.x = posAvion.x + (((rand() % 100) / 100.0f) * 2 - 1) * margin;
 						pos.y = posAvion.y + (((rand() % 100) / 100.0f) * 2 - 1) * margin;
-
 					}
 
-
-					float collisionDistance = 1.0f; 
-
-					if (glm::distance(pos, posAvion) < collisionDistance)
+					// SOLO detectar colisiones si han pasado al menos 2 segundos
+					if (tiempoDesdeInicio.count() > 2.0)
 					{
-						gameIsOver = true;
-						showGameOverWindowFlag = true;
-						gameMood = false;
+						bool restartPending = false;
 
-						stopAventureSound();
-						playGameOverSound();
+						float collisionDistance = 1.0f;
+						if (glm::distance(pos, posAvion) < collisionDistance)
+						{
+							gameIsOver = true;
+							showGameOverWindowFlag = true;
+							gameMood = false;
 
-						finalTime = std::chrono::high_resolution_clock::now() - startTime - pausedDuration;
+							stopAventureSound();
+							if (!gameOverSoundPlayed)
+							{
+								playGameOverSound();
+								gameOverSoundPlayed = true;
+							}
+
+
+							finalTime = std::chrono::high_resolution_clock::now() - startTime - pausedDuration;
+						}
 					}
 				}
+
 			}
 		
 
@@ -926,7 +942,8 @@ int main(int argc, char* argv[])
 
 			if (restartRequested) {
 				playClickSound();
-				restartGame(posAvion, obstaculos, gameIsOver, showGameOverWindowFlag, finalTime);
+				restartGame(posAvion, obstaculos, gameIsOver, showGameOverWindowFlag, finalTime, gameMood);
+
 				restartRequested = false;
 				gameMood = true;
 			}
@@ -944,8 +961,6 @@ int main(int argc, char* argv[])
 			//END OF THE GAME OVER LOGIC
 
 #pragma endregion
-
-			static std::chrono::duration<double> finalTime = std::chrono::duration<double>::zero();
 
 			if (gameIsOver) {
 
@@ -1019,7 +1034,8 @@ int main(int argc, char* argv[])
 				ImGui::SetCursorPos(ImVec2(centerX, 160));
 				if (ImGui::Button(isSpanish ? "Reiniciar" : "Restart", ImVec2(buttonWidth, buttonHeight))) {
 					playClickSound();
-					restartGame(posAvion, obstaculos, gameIsOver, showGameOverWindowFlag, finalTime);
+					restartGame(posAvion, obstaculos, gameIsOver, showGameOverWindowFlag, finalTime, gameMood);
+
 					gameisPaused = false;
 				}
 
@@ -1063,10 +1079,10 @@ int main(int argc, char* argv[])
 			//End configuration of the pause bottom
 		}
 
-		else {
+		//else {
 
-			startTime = std::chrono::high_resolution_clock::now();
-		}
+			//startTime = std::chrono::high_resolution_clock::now();
+		//}
 
 
 		// Set ImGui style

@@ -9,19 +9,16 @@ using json = nlohmann::json;
 class Model
 {
 public:
-    // Constructor para modelo sin transformación inicial
+   
     Model(const char* file);
 
-    // Constructor que incluye una transformación inicial
+  
     Model(const char* file, glm::mat4 transform);
 
-    // Dibuja el modelo usando su transformación interna
     void Draw(Shader& shader, Camera& camera);
 
-    // Dibuja el modelo usando una transformación externa
     void Draw(Shader& shader, Camera& camera, const glm::mat4& externalTransform);
 
-    // Permite obtener y establecer la transformación del modelo
     const glm::mat4& getTransform() const { return modelTransform; }
     void setTransform(const glm::mat4& transform) { modelTransform = transform; }
 
@@ -30,21 +27,19 @@ private:
     std::vector<unsigned char> data;
     json JSON;
 
-    // Almacena las mallas y transformaciones
     std::vector<Mesh> meshes;
     std::vector<glm::vec3> translationsMeshes;
     std::vector<glm::quat> rotationsMeshes;
     std::vector<glm::vec3> scalesMeshes;
     std::vector<glm::mat4> matricesMeshes;
 
-    // Texturas ya cargadas
+    //Loaded textures
     std::vector<std::string> loadedTexName;
     std::vector<Texture> loadedTex;
 
-    // Transformación del modelo
+    //model tranform
     glm::mat4 modelTransform = glm::mat4(1.0f);
 
-    // Métodos privados para cargar y procesar el modelo
     void loadMesh(unsigned int indMesh);
     void traverseNode(unsigned int nextNode, glm::mat4 matrix = glm::mat4(1.0f));
     std::vector<unsigned char> getData();
