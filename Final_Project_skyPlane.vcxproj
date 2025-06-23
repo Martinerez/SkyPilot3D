@@ -71,12 +71,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\ashle\source\repos\test\dependencies\include</IncludePath>
-    <LibraryPath>C:\Users\ashle\source\repos\test\dependencies\lib</LibraryPath>
+    <IncludePath>C:\Users\Rebeca\source\repos\4.0\dependencies\include</IncludePath>
+    <LibraryPath>C:\Users\Rebeca\source\repos\4.0\dependencies\lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\Rebeca\source\repos\2.0\dependencies\include</IncludePath>
-    <LibraryPath>C:\Users\Rebeca\source\repos\2.0\dependencies\lib</LibraryPath>
+    <IncludePath>C:\Users\Rebeca\source\repos\4.0\dependencies\include</IncludePath>
+    <LibraryPath>C:\Users\Rebeca\source\repos\4.0\dependencies\lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>C:\Users\DELL 5590\Desktop\SkyPilot3D\dependencies\include</IncludePath>

@@ -24,6 +24,7 @@ Model::Model(const char* file, glm::mat4 transform)
 	Model::file = file;
 	data = getData();
 
+	position = glm::vec3(transform[3]);
 	traverseNode(0, transform);  // Usamos la transformación proporcionada
 }
 

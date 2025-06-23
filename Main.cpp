@@ -145,7 +145,7 @@ void stopGameOverSound() {
 
 //Variable to know if the game was paused
 bool gameisPaused = false;
-
+bool colision = false;
 //Method to create the start menu
 //Variables we´ll use
 bool shouldExit = false;
@@ -242,6 +242,14 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 	if (ImGui::Button(isSpanish ? "JUGAR" : "PLAY", ImVec2(buttonWidth, buttonHeight))) {
 		playClickSound();
 		gameMood = true;
+
+		//restartGame(camera, personajePos, modelos, gameIsOver, showGameOverWindowFlag, finalTime, gameMood);
+
+		gameisPaused = false;
+		colision = false;
+
+
+
 		if (gameMood) {
 			playAdventureSound();
 		}
@@ -495,34 +503,47 @@ std::chrono::duration<double> accumulatedTime(0);
 
 bool gameOverSoundPlayed = false;
 
-
+bool hayColision(glm::vec3 a, glm::vec3 b, float distanciaMinima)
+{
+	return glm::distance(a, b) < distanciaMinima;
+}
 
 //function for restarting the game
-void restartGame(glm::vec3& posAvion, std::vector<glm::vec3>& obstaculos, bool& gameIsOver, bool& showGameOverWindowFlag, std::chrono::duration<double>& finalTime,
-	bool& gameMood)
+void restartGame(Camera& camera, glm::vec3& posAvion, std::vector<Model>& modelos,
+                 bool& gameIsOver, bool& showGameOverWindowFlag,
+                 std::chrono::duration<double>& finalTime, bool& gameMood)
 {
 	gameMood = true;
-
-	posAvion = glm::vec3(0.0f, 0.0f, -50.0f);
-
-	obstaculos.clear();
-	obstaculos.push_back(glm::vec3(0.0f, 0.0f, -60.0f));
-	obstaculos.push_back(glm::vec3(5.0f, 2.0f, -90.0f));
-	obstaculos.push_back(glm::vec3(-5.0f, -2.0f, -120.0f));
-
-	startTime = std::chrono::high_resolution_clock::now();
-	pausedDuration = std::chrono::duration<double>::zero();
-	pauseStart = startTime;
-
-	gameisPaused = false;
 	gameIsOver = false;
 	showGameOverWindowFlag = false;
+	gameisPaused = false;
+	gameOverSoundPlayed = false;
+	bool colision = false;
+
+	// Reiniciar posición de la cámara
+	camera.Position = glm::vec3(0.0f, 0.0f, 2.0f);
+
+	// Reiniciar posición del avión respecto a la cámara
+	posAvion = glm::vec3(camera.Position.x, camera.Position.y - 0.5f, camera.Position.z - 5.0f);
+
+	// Limpiar obstáculos y poner uno inicial
+	modelos.clear();
+	glm::vec3 firstPos = glm::vec3(0.0f, 0.0f, -60.0f);
+	glm::mat4 firstTransform = glm::translate(glm::mat4(1.0f), firstPos);
+	firstTransform = glm::scale(firstTransform, glm::vec3(0.5f));
+	modelos.push_back(Model("Resources/Models/anillo/scene.gltf", firstTransform));
+
+	// Reiniciar temporizadores
+	startTime = std::chrono::high_resolution_clock::now();
+	pauseStart = startTime;
+	pausedDuration = std::chrono::duration<double>::zero();
 	finalTime = std::chrono::duration<double>::zero();
+
+	// Reiniciar música
 	stopGameOverSound();
 	playAdventureSound();
-	
-	gameOverSoundPlayed = false;
 }
+
 
 
 
@@ -543,7 +564,7 @@ int main(int argc, char* argv[])
 	SDL_AudioSpec wavSpec;
 	SDL_AudioSpec obtainedSpec;
 
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/16_06_adding/assets/adventure.wav", &wavSpec, &wavBuffer, &wavLength))
+	if (!SDL_LoadWAV("assets/adventure.wav", &wavSpec, &wavBuffer, &wavLength))
 	{
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 		SDL_Quit();
@@ -566,7 +587,7 @@ int main(int argc, char* argv[])
 
 	//REPLACE WITH YOUR PATH (MESSAGE TO THE TEAM)
 
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/test/assets/mixkit-quick-win-video-game-notification-269.wav", &clickSpec, &clickBuffer, &clickLength)) {
+	if (!SDL_LoadWAV("assets/mixkit-quick-win-video-game-notification-269.wav", &clickSpec, &clickBuffer, &clickLength)) {
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 	}
 	clickDevice = SDL_OpenAudioDevice(nullptr, 0, &clickSpec, nullptr, 0);
@@ -575,7 +596,7 @@ int main(int argc, char* argv[])
 
 	SDL_AudioSpec startSpec;
 
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/16_06_adding/assets/BeginMenu.wav", &startSpec, &startBuffer, &startLength)) {
+	if (!SDL_LoadWAV("assets/BeginMenu.wav", &startSpec, &startBuffer, &startLength)) {
 		std::cerr << "Error SDL_LoadWAV (start): " << SDL_GetError() << "\n";
 	}
 	startDevice = SDL_OpenAudioDevice(nullptr, 0, &startSpec, nullptr, 0);
@@ -583,7 +604,7 @@ int main(int argc, char* argv[])
 
 	//Game over sound
 	SDL_AudioSpec gameOverspec;
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/16_06_adding/assets/GameOver.wav", &gameOverspec, &gameOverBuffer, &gameOverLength)) {
+	if (!SDL_LoadWAV("assets/GameOver.wav", &gameOverspec, &gameOverBuffer, &gameOverLength)) {
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 	}
 
@@ -641,6 +662,9 @@ int main(int argc, char* argv[])
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
 
+	glm::mat4 lightModel = glm::mat4(1.0f);
+	lightModel = glm::translate(lightModel, lightPos);
+
 	shaderProgram.Activate();
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
@@ -661,34 +685,49 @@ int main(int argc, char* argv[])
 	glFrontFace(GL_CCW);
 
 	//Creates camera object
-	Camera camera(width, height, glm::vec3(0.0f, -1.0f, -15.0f));
+	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
 
 	//Replace this with your path (To the team)
-
-	std::string parentDir = "C:/Users/ashle/source/repos/SKYPILOT_ACTUAL/Resources";
-	std::string parentD = (fs::current_path().fs::path::parent_path()).string();
-	std::string modelPath = "/SKYPILOT_ACTUAL/Resources/Models/airplane/scene.gltf";
-	std::string modelPath2 = "/16_06_adding/Resources/Models/anillo/scene.gltf";
-
-
-
 	std::string facesCubemap[6] = {
-		parentDir + "/right.png",
-		parentDir + "/left.png",
-		parentDir + "/top.png",
-		parentDir + "/bottom.png",
-		parentDir + "/front.png",
-		parentDir + "/back.png"
+		"Resources/right.png",
+		"Resources/left.png",
+		"Resources/top.png",
+		"Resources/bottom.png",
+		"Resources/front.png",
+		"Resources/back.png"
 	};
 
+	float modelSpacing = 40.0f;   // Ahora la separación es 40 unidades en Z
+	float triggerDistance = 20.0f; // Solo se genera un nuevo modelo cada 20 unidades que avanza la cámara
+
 	// Load in models
-	Model modelAirplane((parentD + modelPath).c_str());
-	Model modelAnillo((parentD + modelPath2).c_str());
+	Model personaje("Resources/Models/airplane/scene.gltf");
+
+	// Carga de obstaculos
+	std::vector<Model> modelos;
+	glm::vec3 firstPos = glm::vec3(camera.Position.x, camera.Position.y, camera.Position.z - modelSpacing);
+	glm::mat4 firstTransform = glm::translate(glm::mat4(1.0f), firstPos);
+	firstTransform = glm::scale(firstTransform, glm::vec3(0.5f));
+
+	modelos.push_back(Model("Resources/Models/anillo/scene.gltf", firstTransform));
+
+	//float lastTriggerZ = 2.0f;     // Última posición en Z donde se generó un modelo
+	float lastTriggerZ = camera.Position.z - triggerDistance;
+
+	int cycleState = 0;
+
+	float lastTriggerTime = 0.0f;
+	float spawnInterval = 2.0f; // cada 2 segundos aparece un modelo nuevo
+	float lastFrame = glfwGetTime();  // CORRECTO
+	float deltaTime = 0.0f;
+
+
+
 
 	//Variables to create periodic event for FPS displaying
 	double prevTime = 0.0;
 	double crntTime = 0.0;
-	double timeDiff;
+	//double timeDiff;
 
 	//Keeps track of the amount of frames in timeDiff
 	unsigned int counter = 0;
@@ -793,7 +832,7 @@ int main(int argc, char* argv[])
 		float currentFrameTime = glfwGetTime();
 		float deltaTime = currentFrameTime - lastFrameTime;
 		lastFrameTime = currentFrameTime;
-
+		glm::mat4 personajeTransform = glm::mat4(1.0f);
 		glfwPollEvents();
 		// ImGui Frame
 		ImGui_ImplOpenGL3_NewFrame();
@@ -807,91 +846,45 @@ int main(int argc, char* argv[])
 		//Configuring the chronometer that will appear while playing
 
 		if (gameMood) {
-			glm::vec3 personajePos = posAvion;
-
-			//First position of the plane
 			
-			float personajeSpeed = 10.0f; //speed
+			// Dibujar el personaje principal
+			
+			glm::vec3 personajePos = glm::vec3(camera.Position.x, camera.Position.y - 0.5f, camera.Position.z - 5.0f);
+			personajeTransform = glm::translate(personajeTransform, personajePos);
+			personajeTransform = glm::rotate(personajeTransform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			personajeTransform = glm::scale(personajeTransform, glm::vec3(0.5f));
 
 			if (gameMood && !gameisPaused)
 			{
-				float velocidad = 5.0f * deltaTime;
-
-				if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-					posAvion.y += velocidad;  
-				if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-					posAvion.y -= velocidad; 
-				if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-					posAvion.x -= velocidad;
-				if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-					posAvion.x += velocidad;
-
-			
-				float obstacleSpeed = 20.0f;
-
-				// Agregar delay de gracia antes de detectar colisiones
-				auto tiempoActual = std::chrono::high_resolution_clock::now();
-				std::chrono::duration<double> tiempoDesdeInicio = tiempoActual - startTime;
-
-				for (auto& pos : obstaculos)
+				for (auto& model : modelos)
 				{
-					pos.z += obstacleSpeed * deltaTime;
-
-					if (pos.z > posAvion.z + 5.0f)
+					if (hayColision(personajePos, model.getPosition(), 1.0f))  // puedes ajustar el valor
 					{
-						pos.z = posAvion.z - 50.0f;
-						float margin = 0.3f;
-						pos.x = posAvion.x + (((rand() % 100) / 100.0f) * 2 - 1) * margin;
-						pos.y = posAvion.y + (((rand() % 100) / 100.0f) * 2 - 1) * margin;
-					}
+						colision = true;
+						gameIsOver = true;
+						showGameOverWindowFlag = true;
+						gameMood = false;
 
-					// SOLO detectar colisiones si han pasado al menos 2 segundos
-					if (tiempoDesdeInicio.count() > 2.0)
-					{
-						bool restartPending = false;
-
-						float collisionDistance = 1.0f;
-						if (glm::distance(pos, posAvion) < collisionDistance)
+						stopAventureSound();
+						if (!gameOverSoundPlayed)
 						{
-							gameIsOver = true;
-							showGameOverWindowFlag = true;
-							gameMood = false;
-
-							stopAventureSound();
-							if (!gameOverSoundPlayed)
-							{
-								playGameOverSound();
-								gameOverSoundPlayed = true;
-							}
-
-
-							finalTime = std::chrono::high_resolution_clock::now() - startTime - pausedDuration;
+							playGameOverSound();
+							gameOverSoundPlayed = true;
 						}
+
+
+						finalTime = std::chrono::high_resolution_clock::now() - startTime - pausedDuration;
+						break;
 					}
 				}
 
+				if (!colision)
+				{
+					camera.Inputs(window, deltaTime, personajePos);
+				}
+
 			}
-		
 
-			glm::mat4 personajeTransform = glm::mat4(1.0f);
-			personajeTransform = glm::translate(personajeTransform, personajePos);
-			personajeTransform = glm::rotate(personajeTransform, glm::radians(90.0f), glm::vec3(0, 1, 0));
-			personajeTransform = glm::scale(personajeTransform, glm::vec3(1.0f));
-
-			shaderProgram.Activate();
-
-			// Draw the normal model
-			modelAirplane.Draw(shaderProgram, camera, personajeTransform);
-
-			
-			for (auto& pos : obstaculos)
-			{
-				glm::mat4 transform = glm::mat4(1.0f);
-				transform = glm::translate(transform, pos);
-				transform = glm::rotate(transform, glm::radians(80.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-				transform = glm::scale(transform, glm::vec3(0.5f));
-				modelAnillo.Draw(shaderProgram, camera, transform);
-			}
 			
 
 			//Pause bottom start 
@@ -942,7 +935,7 @@ int main(int argc, char* argv[])
 
 			if (restartRequested) {
 				playClickSound();
-				restartGame(posAvion, obstaculos, gameIsOver, showGameOverWindowFlag, finalTime, gameMood);
+				restartGame(camera, personajePos, modelos, gameIsOver, showGameOverWindowFlag, finalTime, gameMood);
 
 				restartRequested = false;
 				gameMood = true;
@@ -1028,15 +1021,17 @@ int main(int argc, char* argv[])
 					auto now = std::chrono::high_resolution_clock::now();
 					pausedDuration += now - pauseStart;
 					gameisPaused = false;
+					colision = false;
 				}
 
 
 				ImGui::SetCursorPos(ImVec2(centerX, 160));
 				if (ImGui::Button(isSpanish ? "Reiniciar" : "Restart", ImVec2(buttonWidth, buttonHeight))) {
 					playClickSound();
-					restartGame(posAvion, obstaculos, gameIsOver, showGameOverWindowFlag, finalTime, gameMood);
+					restartGame(camera, personajePos, modelos, gameIsOver, showGameOverWindowFlag, finalTime, gameMood);
 
 					gameisPaused = false;
+					colision = false;
 				}
 
 
@@ -1062,6 +1057,7 @@ int main(int argc, char* argv[])
 						playClickSound();
 						gameMood = false;
 						gameisPaused = false;
+						colision = false;
 						stopAventureSound();
 						starMenuSound();
 					}
@@ -1145,14 +1141,51 @@ int main(int argc, char* argv[])
 			menuSoundPlayed = false;
 		}
 
-		std::vector<Model> modelos;
+		//std::vector<Model> modelos;
 		//GAME MOOD
+		
+		float camX = camera.Position.x;
+		float camY = camera.Position.y;
+		float camZ = camera.Position.z;
+
+		if (lastTriggerZ - camZ >= triggerDistance)
+		{
+			lastTriggerZ = camZ;
+
+			// La posición X y Y del modelo va a ser la misma que la cámara
+			float xOffset = camX;
+			float yOffset = camY;
+
+
+			glm::vec3 newPos = glm::vec3(xOffset, yOffset, camZ - modelSpacing);
+			glm::mat4 transform = glm::translate(glm::mat4(1.0f), newPos);
+			transform = glm::scale(transform, glm::vec3(0.5f));
+
+			modelos.push_back(Model("Resources/Models/anillo/scene.gltf", transform));
+
+			if (modelos.size() > 4)
+			{
+				modelos.erase(modelos.begin(), modelos.begin() + 2);
+			}
+
+		}
+
+		camera.updateMatrix(50.0f, 0.1f, 300.0f);
+
+		// Draw the normal model
+		personaje.Draw(shaderProgram, camera, personajeTransform);
+
+		for (auto& model : modelos)
+		{
+			model.Draw(shaderProgram, camera);
+		}
+
 		//glEnable(GL_DEPTH_TEST);
 		//glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//camera.Inputs(window);
-		camera.updateMatrix(45.0f, 0.1f, 100.0f);
+		//camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
 		
 

@@ -1,8 +1,5 @@
 ﻿#include"Camera.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
-
-
 Camera::Camera(int width, int height, glm::vec3 position)
 {
 	Camera::width = width;
@@ -35,7 +32,8 @@ void Camera::Matrix(Shader& shader, const char* uniform)
 
 void Camera::Inputs(GLFWwindow* window, float deltaTime, glm::vec3 personajePos)
 {
-	autoSpeed += 0.1f * deltaTime;
+	//autoSpeed += 0.1f * deltaTime;
+	autoSpeed = 0.2f;
 	glm::vec3 direction = Orientation * autoSpeed; // movimiento automático
 
 	// Manejar entradas del teclado
