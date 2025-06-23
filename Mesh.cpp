@@ -10,7 +10,10 @@ Mesh::Mesh(std::vector <Vertex>& vertices, std::vector <GLuint>& indices, std::v
 	// Generates Vertex Buffer Object and links it to vertices
 	VBO VBO(vertices);
 	// Generates Element Buffer Object and links it to indices
-	EBO EBO(indices);
+
+	//EBO EBO(indices);
+	EBO EBO(indices.data(), indices.size() * sizeof(GLuint));
+
 	// Links VBO attributes such as coordinates and colors to VAO
 	VAO.LinkAttrib(VBO, 0, 3, GL_FLOAT, sizeof(Vertex), (void*)0);
 	VAO.LinkAttrib(VBO, 1, 3, GL_FLOAT, sizeof(Vertex), (void*)(3 * sizeof(float)));
@@ -25,11 +28,11 @@ Mesh::Mesh(std::vector <Vertex>& vertices, std::vector <GLuint>& indices, std::v
 
 void Mesh::Draw
 (
-	Shader& shader, 
+	Shader& shader,
 	Camera& camera,
 	glm::mat4 matrix,
-	glm::vec3 translation, 
-	glm::quat rotation, 
+	glm::vec3 translation,
+	glm::quat rotation,
 	glm::vec3 scale
 )
 {

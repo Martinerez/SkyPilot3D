@@ -1,25 +1,35 @@
 #ifndef MODEL_CLASS_H
 #define MODEL_CLASS_H
 
-#include<json/json.h>
+#include<JSON/json.h>
 #include"Mesh.h"
+#include"Camera.h"
+
+
 
 using json = nlohmann::json;
-
 
 class Model
 {
 public:
 	// Loads in a model from a file and stores tha information in 'data', 'JSON', and 'file'
 	Model(const char* file);
+	Model(const char* file, glm::mat4 transform);
 
 	void Draw(Shader& shader, Camera& camera);
+	void Draw(Shader& shader, Camera& camera, const glm::mat4& externalTransform);
+
+	glm::vec3 getPosition() const { return position; }
 
 private:
 	// Variables for easy access
 	const char* file;
 	std::vector<unsigned char> data;
 	json JSON;
+
+
+	glm::vec3 position;
+
 
 	// All the meshes and transformations
 	std::vector<Mesh> meshes;
@@ -48,8 +58,8 @@ private:
 	// Assembles all the floats into vertices
 	std::vector<Vertex> assembleVertices
 	(
-		std::vector<glm::vec3> positions, 
-		std::vector<glm::vec3> normals, 
+		std::vector<glm::vec3> positions,
+		std::vector<glm::vec3> normals,
 		std::vector<glm::vec2> texUVs
 	);
 

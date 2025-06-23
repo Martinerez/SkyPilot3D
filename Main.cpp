@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include <chrono>
-
+#include "Camera.h"
 
 int width = 800;
 int height = 800;
@@ -60,7 +60,7 @@ unsigned int skyboxIndices[] = {
 };
 
 
-//AUDIO CONFIGURATIONS PT.1 BEGIN
+#pragma region AUDIO CONFIGURATIONS PT.1 BEGIN
 
 Uint8* wavBuffer = nullptr;
 Uint32 wavLength = 0;
@@ -135,17 +135,24 @@ void playGameOverSound() {
 	SDL_QueueAudio(gameOverDevice, gameOverBuffer, gameOverLength);
 	SDL_PauseAudioDevice(gameOverDevice, 0);
 }
+void stopGameOverSound() {
+	SDL_ClearQueuedAudio(gameOverDevice);
+	SDL_PauseAudioDevice(gameOverDevice, 1);
+}
 
+#pragma endregion 
 //END PT.1
 
 //Variable to know if the game was paused
 bool gameisPaused = false;
-
+bool colision = false;
 //Method to create the start menu
 //Variables we´ll use
 bool shouldExit = false;
 static bool confirmExit = false;
+bool restartRequested = false;
 
+#pragma region WINDOWS
 void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, bool& isSpanish, float& brightness)
 {
 
@@ -155,7 +162,7 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 		glfwTerminate();
 		exit(0);
 	}
-	
+
 	if (!menuSoundPlayed) {
 		starMenuSound();
 		menuSoundPlayed = true;
@@ -233,13 +240,15 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 
 
 	if (ImGui::Button(isSpanish ? "JUGAR" : "PLAY", ImVec2(buttonWidth, buttonHeight))) {
-		playClickSound();
 		gameMood = true;
+		playClickSound();
+		restartRequested = true;
+
 		if (gameMood) {
 			playAdventureSound();
 		}
 	}
-	
+
 	// button "About the game"
 	ImGui::SetCursorPos(ImVec2(centerX, 160));
 	static bool showAbout = false;
@@ -269,8 +278,7 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 				"  - W para subir\n"
 				"  - S para bajar\n"
 				"  - A para ir a la izquierda\n"
-				"  - D para ir a la derecha\n"
-				"  - G para iniciar el juego\n");
+				"  - D para ir a la derecha\n");
 		}
 		else {
 			ImGui::Text("SkyPlane3D is an exciting third-person game where you control a plane\n"
@@ -279,8 +287,7 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 				"  - W to ascend\n"
 				"  - S to descend\n"
 				"  - A to go left\n"
-				"  - D to go right\n"
-				"  - G to start the game\n");
+				"  - D to go right\n");
 		}
 
 		if (ImGui::Button(isSpanish ? "Cerrar" : "Close")) {
@@ -336,7 +343,7 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 
 		ImGui::EndPopup();
 
-		
+
 	}
 
 	static bool showCredits = false;
@@ -375,8 +382,8 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 
 		ImGui::EndPopup();
 	}
-	
-	ImGui::SetCursorPos(ImVec2(centerX, 340)); 
+
+	ImGui::SetCursorPos(ImVec2(centerX, 340));
 
 	if (ImGui::Button(isSpanish ? "Salir" : "Exit", ImVec2(buttonWidth, buttonHeight))) {
 		playClickSound();
@@ -390,7 +397,7 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 	}
 
 	if (ImGui::BeginPopupModal(isSpanish ? "Confirmar salida" : "Confirm Exit", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text(isSpanish ? "¿Seguro que quieres salir del juego?" : "Are you sure you want to exit the game?");
+		ImGui::Text(isSpanish ? "Seguro que quieres salir del juego?" : "Are you sure you want to exit the game?");
 		ImGui::Separator();
 
 		if (ImGui::Button(isSpanish ? "Si" : "Yes", ImVec2(120, 0))) {
@@ -404,93 +411,134 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 			playClickSound();
 			ImGui::CloseCurrentPopup();
 		}
-		ImGui::EndPopup(); 
+		ImGui::EndPopup();
 	}
 
 	ImGui::End();
 	ImGui::PopStyleColor();
 
-	}
-	
+}
 
-void showGameOverWindow(bool isSpanish, bool& showGameOverWindow, bool& restartRequested, bool& exitToMenuRequested, bool& gameMood) {
-		if (!showGameOverWindow) return;
 
-		ImGuiIO& io = ImGui::GetIO();
-		ImVec2 center = ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-		ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_Always);
+void showGameOverWindow(bool isSpanish, bool& showGameOverWindowFlag, bool& restartRequested, bool& exitToMenuRequested, int score) {
+	if (!showGameOverWindowFlag) return;
 
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f)); 
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));     
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(30, 30));         
+	ImGuiIO& io = ImGui::GetIO();
+	ImVec2 center = ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
+	ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+	ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_Always);
 
-		if (ImGui::BeginPopupModal(isSpanish ? "FIN DEL JUEGO" : "GAME OVER", nullptr,
-			ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar))
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(30, 30));
+
+
+	if (!ImGui::IsPopupOpen("GameOverPopup"))
+		ImGui::OpenPopup("GameOverPopup");
+
+	if (ImGui::BeginPopupModal("GameOverPopup", nullptr,
+		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar))
+	{
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		float titleWidth = ImGui::CalcTextSize(isSpanish ? "GAME OVER!" : "GAME OVER!").x;
+		float posX = (ImGui::GetWindowSize().x - titleWidth) * 0.5f;
+
+		//Centered text
+		ImGui::SetCursorPosX(posX);
+		ImGui::PushFont(io.Fonts->Fonts[0]);
+		ImGui::Text(isSpanish ? "GAME OVER!" : "GAME OVER!");
+		ImGui::PopFont();
+
+
+		ImGui::SetCursorPosX(posX);
+		ImGui::Text("%s: %d", isSpanish ? "Puntuacion" : "Score", score);
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+
+		float buttonWidth = 180;
+		float buttonSpacing = 20;
+		float totalWidth = (buttonWidth * 2) + buttonSpacing;
+		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - totalWidth) * 0.5f);
+
+		if (ImGui::Button(isSpanish ? "Volver a jugar" : "Play Again", ImVec2(buttonWidth, 0)))
 		{
-			ImGui::Spacing();
-			ImGui::Spacing();
-
-			//Centered text
-			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize(isSpanish ? "FIN DEL JUEGO!" : "GAME OVER!").x) * 0.5f);
-			ImGui::PushFont(io.Fonts->Fonts[0]); 
-			ImGui::Text(isSpanish ? "FIN DEL JUEGO!" : "GAME OVER!");
-			ImGui::PopFont();
-
-			ImGui::Spacing();
-			ImGui::Spacing();
-
-			// Centering the buttons
-			float buttonWidth = 180;
-			float buttonSpacing = 20;
-			float totalWidth = (buttonWidth * 2) + buttonSpacing;
-
-			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - totalWidth) * 0.5f);
-
-			if (ImGui::Button(isSpanish ? "Volver a jugar" : "Play Again", ImVec2(buttonWidth, 0)))
-			{
-				restartRequested = true;
-				showGameOverWindow = false;
-				ImGui::CloseCurrentPopup();
-				gameMood = true;
-				playAdventureSound();
-			}
-
-			ImGui::SameLine(0, buttonSpacing);
-
-			if (ImGui::Button(isSpanish ? "Salir" : "Exit", ImVec2(buttonWidth, 0)))
-			{
-				exitToMenuRequested = true;
-				showGameOverWindow = false;
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::EndPopup();
-		}
-		else {
-			ImGui::OpenPopup(isSpanish ? "GAME OVER" : "GAME OVER");
+			restartRequested = true;
+			showGameOverWindowFlag = false;
+			ImGui::CloseCurrentPopup();
 		}
 
-		ImGui::PopStyleVar();
-		ImGui::PopStyleColor(2);
+		ImGui::SameLine(0, buttonSpacing);
+
+		if (ImGui::Button(isSpanish ? "Salir" : "Exit", ImVec2(buttonWidth, 0)))
+		{
+			exitToMenuRequested = true;
+			showGameOverWindowFlag = false;
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
 	}
 
-	
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor(2);
+}
+
+#pragma endregion
+
 //Variables for the chronometer
 auto startTime = std::chrono::high_resolution_clock::now();
 auto pauseStart = startTime;
 std::chrono::duration<double> pausedDuration(0);
 std::chrono::duration<double> accumulatedTime(0);
 
+bool gameOverSoundPlayed = false;
+
+bool hayColision(glm::vec3 a, glm::vec3 b, float distanciaMinima)
+{
+	return glm::distance(a, b) < distanciaMinima;
+}
 
 //function for restarting the game
-void restartGame() {
-
-	startTime = std::chrono::high_resolution_clock::now();
-	pausedDuration = std::chrono::seconds(0);
-	pauseStart = startTime;
+void restartGame(Camera& camera, glm::vec3& posAvion, std::vector<Model>& modelos,
+	bool& gameIsOver, bool& showGameOverWindowFlag,
+	std::chrono::duration<double>& finalTime, bool& gameMood)
+{
+	gameMood = true;
+	gameIsOver = false;
+	showGameOverWindowFlag = false;
 	gameisPaused = false;
+	gameOverSoundPlayed = false;
+	bool colision = false;
+
+	// Reiniciar posición de la cámara
+	camera.Position = glm::vec3(0.0f, 0.0f, 2.0f);
+
+	// Reiniciar posición del avión respecto a la cámara
+	posAvion = glm::vec3(camera.Position.x, camera.Position.y - 0.5f, camera.Position.z - 5.0f);
+
+	// Limpiar obstáculos y poner uno inicial
+	modelos.clear();
+	glm::vec3 firstPos = glm::vec3(0.0f, 0.0f, -60.0f);
+	glm::mat4 firstTransform = glm::translate(glm::mat4(1.0f), firstPos);
+	firstTransform = glm::scale(firstTransform, glm::vec3(0.5f));
+	modelos.push_back(Model("Resources/Models/anillo/scene.gltf", firstTransform));
+
+	// Reiniciar temporizadores
+	startTime = std::chrono::high_resolution_clock::now();
+	pauseStart = startTime;
+	pausedDuration = std::chrono::duration<double>::zero();
+	finalTime = std::chrono::duration<double>::zero();
+
+	// Reiniciar música
+	stopGameOverSound();
+	playAdventureSound();
 }
+
+
 
 
 static bool gameIsOver = false;
@@ -498,7 +546,9 @@ static bool gameIsOver = false;
 
 int main(int argc, char* argv[])
 {
-	//AUDIO CONFIGURATIONS PT.2 BEGIN
+
+
+#pragma region AUDIO CONFIGURATIONS PT.2 BEGIN
 
 	if (SDL_Init(SDL_INIT_AUDIO) < 0) {
 		std::cerr << "Error SDL_Init: " << SDL_GetError() << "\n";
@@ -508,7 +558,7 @@ int main(int argc, char* argv[])
 	SDL_AudioSpec wavSpec;
 	SDL_AudioSpec obtainedSpec;
 
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/16_06_adding/assets/adventure.wav", &wavSpec, &wavBuffer, &wavLength))
+	if (!SDL_LoadWAV("assets/adventure.wav", &wavSpec, &wavBuffer, &wavLength))
 	{
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 		SDL_Quit();
@@ -531,7 +581,7 @@ int main(int argc, char* argv[])
 
 	//REPLACE WITH YOUR PATH (MESSAGE TO THE TEAM)
 
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/test/assets/mixkit-quick-win-video-game-notification-269.wav", &clickSpec, &clickBuffer, &clickLength)) {
+	if (!SDL_LoadWAV("assets/mixkit-quick-win-video-game-notification-269.wav", &clickSpec, &clickBuffer, &clickLength)) {
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 	}
 	clickDevice = SDL_OpenAudioDevice(nullptr, 0, &clickSpec, nullptr, 0);
@@ -540,7 +590,7 @@ int main(int argc, char* argv[])
 
 	SDL_AudioSpec startSpec;
 
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/16_06_adding/assets/BeginMenu.wav", &startSpec, &startBuffer, &startLength)) {
+	if (!SDL_LoadWAV("assets/BeginMenu.wav", &startSpec, &startBuffer, &startLength)) {
 		std::cerr << "Error SDL_LoadWAV (start): " << SDL_GetError() << "\n";
 	}
 	startDevice = SDL_OpenAudioDevice(nullptr, 0, &startSpec, nullptr, 0);
@@ -548,15 +598,13 @@ int main(int argc, char* argv[])
 
 	//Game over sound
 	SDL_AudioSpec gameOverspec;
-	if (!SDL_LoadWAV("C:/Users/ashle/source/repos/16_06_adding/assets/GameOver.wav", &gameOverspec, &gameOverBuffer, &gameOverLength)) {
+	if (!SDL_LoadWAV("assets/GameOver.wav", &gameOverspec, &gameOverBuffer, &gameOverLength)) {
 		std::cerr << "Error SDL_LoadWAV: " << SDL_GetError() << "\n";
 	}
 
 	gameOverDevice = SDL_OpenAudioDevice(nullptr, 0, &gameOverspec, nullptr, 0);
 
-
-
-	//AUDIO PT.2 END
+#pragma endregion AUDIO PT.2 END
 
 	//Initializing GLFW
 	glfwInit();
@@ -608,6 +656,9 @@ int main(int argc, char* argv[])
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
 
+	glm::mat4 lightModel = glm::mat4(1.0f);
+	lightModel = glm::translate(lightModel, lightPos);
+
 	shaderProgram.Activate();
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
@@ -628,40 +679,49 @@ int main(int argc, char* argv[])
 	glFrontFace(GL_CCW);
 
 	//Creates camera object
-	Camera camera(width, height, glm::vec3(0.0f, -1.0f, -15.0f));
+	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
 
 	//Replace this with your path (To the team)
-
-	std::string parentDir = "C:/Users/ashle/source/repos/SKYPILOT_ACTUAL/Resources";
-	std::string parentD = (fs::current_path().fs::path::parent_path()).string();
-	std::string modelPath = "/SKYPILOT_ACTUAL/Resources/Models/airplane/scene.gltf";
-
-	//Building model
-	// Ruta absoluta a tu modelo
-	//std::string modelPath2 = "C:/Users/ashle/source/repos/test/Resources/Models/high_rise_building_improved_sketchup_reupload/scene.gltf";
-
-	// Crear el modelo
-	//ModelAssimp abandonedBuildingModel(modelPath2.c_str());
-
-	//end building model
-
-
 	std::string facesCubemap[6] = {
-		parentDir + "/right.png",
-		parentDir + "/left.png",
-		parentDir + "/top.png",
-		parentDir + "/bottom.png",
-		parentDir + "/front.png",
-		parentDir + "/back.png"
+		"Resources/right.png",
+		"Resources/left.png",
+		"Resources/top.png",
+		"Resources/bottom.png",
+		"Resources/front.png",
+		"Resources/back.png"
 	};
 
+	float modelSpacing = 40.0f;   // Ahora la separación es 40 unidades en Z
+	float triggerDistance = 20.0f; // Solo se genera un nuevo modelo cada 20 unidades que avanza la cámara
+
 	// Load in models
-	Model model((parentD + modelPath).c_str());
+	Model personaje("Resources/Models/airplane/scene.gltf");
+
+	// Carga de obstaculos
+	std::vector<Model> modelos;
+	glm::vec3 firstPos = glm::vec3(camera.Position.x, camera.Position.y, camera.Position.z - modelSpacing);
+	glm::mat4 firstTransform = glm::translate(glm::mat4(1.0f), firstPos);
+	firstTransform = glm::scale(firstTransform, glm::vec3(0.5f));
+
+	modelos.push_back(Model("Resources/Models/anillo/scene.gltf", firstTransform));
+
+	//float lastTriggerZ = 2.0f;     // Última posición en Z donde se generó un modelo
+	float lastTriggerZ = camera.Position.z - triggerDistance;
+
+	int cycleState = 0;
+
+	float lastTriggerTime = 0.0f;
+	float spawnInterval = 2.0f; // cada 2 segundos aparece un modelo nuevo
+	float lastFrame = glfwGetTime();  // CORRECTO
+	float deltaTime = 0.0f;
+
+
+
 
 	//Variables to create periodic event for FPS displaying
 	double prevTime = 0.0;
 	double crntTime = 0.0;
-	double timeDiff;
+	//double timeDiff;
 
 	//Keeps track of the amount of frames in timeDiff
 	unsigned int counter = 0;
@@ -740,18 +800,87 @@ int main(int argc, char* argv[])
 	//Variable to know if the menu sound was played
 	bool menuSoundPlayed = false;
 
+	//TEST
+	// Carga de obstaculos
+
+
+	float lastFrameTime = glfwGetTime();
+
+	std::vector<glm::vec3> obstaculos = {
+			glm::vec3(0.0f, 0.0f, -60.0f),
+			glm::vec3(5.0f, 2.0f, -90.0f),
+			glm::vec3(-5.0f, -2.0f, -120.0f)
+	};
+
+	bool showGameOverWindowFlag = false;
+
+	bool exitToMenuRequested = false;
+	bool gameIsOver = false;
+
+	std::chrono::duration<double> finalTime = std::chrono::duration<double>::zero();
+	static glm::vec3 posAvion = glm::vec3(0.0f, 0.0f, -50.0f);
+
 	while (!glfwWindowShouldClose(window))
 	{
+
+		float currentFrameTime = glfwGetTime();
+		float deltaTime = currentFrameTime - lastFrameTime;
+		lastFrameTime = currentFrameTime;
+		glm::mat4 personajeTransform = glm::mat4(1.0f);
 		glfwPollEvents();
 		// ImGui Frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+		//GAME MOOD
+		glEnable(GL_DEPTH_TEST);
+		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//Configuring the chronometer that will appear while playing
 
 		if (gameMood) {
-			
+
+			// Dibujar el personaje principal
+
+			glm::vec3 personajePos = glm::vec3(camera.Position.x, camera.Position.y - 0.5f, camera.Position.z - 5.0f);
+			personajeTransform = glm::translate(personajeTransform, personajePos);
+			personajeTransform = glm::rotate(personajeTransform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			personajeTransform = glm::scale(personajeTransform, glm::vec3(0.5f));
+
+			if (gameMood && !gameisPaused)
+			{
+				for (auto& model : modelos)
+				{
+					if (hayColision(personajePos, model.getPosition(), 1.0f))  // puedes ajustar el valor
+					{
+						colision = true;
+						gameIsOver = true;
+						showGameOverWindowFlag = true;
+						gameMood = false;
+
+						stopAventureSound();
+						if (!gameOverSoundPlayed)
+						{
+							playGameOverSound();
+							gameOverSoundPlayed = true;
+						}
+
+
+						finalTime = std::chrono::high_resolution_clock::now() - startTime - pausedDuration;
+						break;
+					}
+				}
+
+				if (!colision)
+				{
+					camera.Inputs(window, deltaTime, personajePos);
+				}
+
+			}
+
+
+
 			//Pause bottom start 
 			// Our pause bottom is the M key
 		  //Static variable to keep track of the previous state of the key
@@ -786,39 +915,29 @@ int main(int argc, char* argv[])
 
 #pragma region GAME OVER LOGIC
 
-	     //HERE WE WILL ENABLE IN THE MEANTIME THE MENU OF GAME OVER, NOW IT WILL WORK IF THE X WAS PRESSED DURING THE GAME MOOD
-		 //BUT THE LOGIC WILL CHANGE
+			//HERE WE WILL ENABLE IN THE MEANTIME THE MENU OF GAME OVER, it works when you lose
 
-		//static bool to control the window
-			static bool x_wasPressed = false;
-			static bool showGameOverWindowFlag = false;
-			static bool restartRequested = false;
-			static bool exitToMenuRequested = false;
+		   //static bool to control the window
 
-			
-			bool x_pressed = glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS;
 
-			if (x_pressed && !x_wasPressed) {
-				//We enable the game over window
-				stopAventureSound();
-				playGameOverSound();
-				showGameOverWindowFlag = true;
-				gameIsOver = true;
-			}
 
-			x_wasPressed = x_pressed;
 
 			//imgui render
-			showGameOverWindow(isSpanish, showGameOverWindowFlag, restartRequested, exitToMenuRequested, gameMood);
+			int score = static_cast<int>(finalTime.count());
+			showGameOverWindow(isSpanish, showGameOverWindowFlag, restartRequested, exitToMenuRequested, score);
+
 
 			if (restartRequested) {
 				playClickSound();
-				restartGame();
+				restartGame(camera, personajePos, modelos, gameIsOver, showGameOverWindowFlag, finalTime, gameMood);
+
 				restartRequested = false;
-				startTime = std::chrono::high_resolution_clock::now();  
-				pausedDuration = std::chrono::duration<double>::zero(); 
-				gameIsOver = false; 
+				gameMood = true;
+
+				gameisPaused = false;
+				colision = false;
 			}
+
 
 			if (exitToMenuRequested) {
 				playClickSound();
@@ -833,11 +952,9 @@ int main(int argc, char* argv[])
 
 #pragma endregion
 
-			static std::chrono::duration<double> finalTime = std::chrono::duration<double>::zero();
-
 			if (gameIsOver) {
-				
-				effectiveDuration =finalTime; 
+
+				effectiveDuration = finalTime;
 			}
 			else if (gameisPaused) {
 				effectiveDuration = pauseStart - startTime - pausedDuration;
@@ -901,24 +1018,27 @@ int main(int argc, char* argv[])
 					auto now = std::chrono::high_resolution_clock::now();
 					pausedDuration += now - pauseStart;
 					gameisPaused = false;
+					colision = false;
 				}
 
 
 				ImGui::SetCursorPos(ImVec2(centerX, 160));
 				if (ImGui::Button(isSpanish ? "Reiniciar" : "Restart", ImVec2(buttonWidth, buttonHeight))) {
 					playClickSound();
-					restartGame();
+					restartGame(camera, personajePos, modelos, gameIsOver, showGameOverWindowFlag, finalTime, gameMood);
+
 					gameisPaused = false;
+					colision = false;
 				}
 
-				
+
 				static bool confirmExitPauseMenu = false;
 
 				ImGui::SetCursorPos(ImVec2(centerX, 220));
 
 				if (ImGui::Button(isSpanish ? "Salir de la partida" : "End the game", ImVec2(buttonWidth, buttonHeight))) {
 					playClickSound();
-					confirmExitPauseMenu = true; 
+					confirmExitPauseMenu = true;
 
 				}//POpup confirming the exit
 				if (confirmExitPauseMenu) {
@@ -934,6 +1054,7 @@ int main(int argc, char* argv[])
 						playClickSound();
 						gameMood = false;
 						gameisPaused = false;
+						colision = false;
 						stopAventureSound();
 						starMenuSound();
 					}
@@ -951,11 +1072,11 @@ int main(int argc, char* argv[])
 			//End configuration of the pause bottom
 		}
 
-		else {
-			
-			startTime = std::chrono::high_resolution_clock::now();
-		}
-		
+		//else {
+
+			//startTime = std::chrono::high_resolution_clock::now();
+		//}
+
 
 		// Set ImGui style
 		ImGuiStyle& style = ImGui::GetStyle();
@@ -996,10 +1117,13 @@ int main(int argc, char* argv[])
 		// menu background color
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.95f));
 
-		//Allowing the camera to move only if we are in game mood
-		if (gameMood && !gameisPaused) {
-			camera.Inputs(window);
-		}
+
+
+		//Allowing the camera to move only 
+		// if we are in game mood
+
+
+
 
 		//Showing the menu if we are not on game mood
 
@@ -1014,16 +1138,59 @@ int main(int argc, char* argv[])
 			menuSoundPlayed = false;
 		}
 
+		//std::vector<Model> modelos;
 		//GAME MOOD
-		glEnable(GL_DEPTH_TEST);
-		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//camera.Inputs(window);
-		camera.updateMatrix(45.0f, 0.1f, 100.0f);
+		float camX = camera.Position.x;
+		float camY = camera.Position.y;
+		float camZ = camera.Position.z;
+
+		if (lastTriggerZ - camZ >= triggerDistance)
+		{
+			lastTriggerZ = camZ;
+
+			// La posición X y Y del modelo va a ser la misma que la cámara
+			float xOffset = camX;
+			float yOffset = camY;
+
+
+			glm::vec3 newPos = glm::vec3(xOffset, yOffset, camZ - modelSpacing);
+			glm::mat4 transform = glm::translate(glm::mat4(1.0f), newPos);
+			transform = glm::scale(transform, glm::vec3(0.5f));
+
+			modelos.push_back(Model("Resources/Models/anillo/scene.gltf", transform));
+
+			if (modelos.size() > 4)
+			{
+				modelos.erase(modelos.begin(), modelos.begin() + 2);
+			}
+
+		}
+
+		camera.updateMatrix(50.0f, 0.1f, 300.0f);
 
 		// Draw the normal model
-		model.Draw(shaderProgram, camera);
+		personaje.Draw(shaderProgram, camera, personajeTransform);
+
+		for (auto& model : modelos)
+		{
+			model.Draw(shaderProgram, camera);
+		}
+
+		//glEnable(GL_DEPTH_TEST);
+		//glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		//camera.Inputs(window);
+		//camera.updateMatrix(45.0f, 0.1f, 100.0f);
+
+
+
+
+		//for (auto& model : modelos)
+		//{
+			//modelAnillo.Draw(shaderProgram, camera, anilloTransform);
+		//}
 
 		//abandonedBuildingModel.Draw(shaderProgram, camera);
 		//Skybox 
