@@ -913,8 +913,7 @@ int main(int argc, char* argv[])
 					camera.Inputs(window, deltaTime * speedMultiplier, personajePos);
 				}
 
-				//Render the plane
-				personaje.Draw(shaderProgram, camera, personajeTransform);
+				
 
 				//We get the camera position
 				float camX = camera.Position.x;
@@ -944,6 +943,9 @@ int main(int argc, char* argv[])
 
 				//Update camera matrix
 				camera.updateMatrix(50.0f, 0.1f, 300.0f);
+
+				//Render the plane
+				personaje.Draw(shaderProgram, camera, personajeTransform);
 
 				// Render all the obstacles
 				for (auto& model : modelos)
