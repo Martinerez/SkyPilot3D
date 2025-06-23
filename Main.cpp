@@ -254,7 +254,7 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 	glClear(GL_COLOR_BUFFER_BIT);
 
 
-	ImGui::Begin("SkyPlane3D Menu", nullptr,
+	ImGui::Begin("SkyPilot3D Menu", nullptr,
 		ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoCollapse |
 		ImGuiWindowFlags_NoSavedSettings |
@@ -263,8 +263,8 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 
 	// title
 	ImGui::SetCursorPosY(20);
-	ImGui::SetCursorPosX((menuSize.x - ImGui::CalcTextSize("SkyPlane3D").x) / 2);
-	ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "SkyPlane3D");
+	ImGui::SetCursorPosX((menuSize.x - ImGui::CalcTextSize("SkyPilot3D").x) / 2);
+	ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "SkyPilot3D");
 
 	// separation line
 	ImGui::Separator();
@@ -316,7 +316,7 @@ void showMainMenu(GLFWwindow* window, bool& gameMood, bool& menuSoundPlayed, boo
 	}
 
 	if (ImGui::BeginPopupModal("How to play?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::TextColored(ImVec4(0.6f, 0.4f, 0.9f, 1.0f), "SkyPlane3D");
+		ImGui::TextColored(ImVec4(0.6f, 0.4f, 0.9f, 1.0f), "SkyPilot3D");
 		ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "Version 1.0");
 
 		ImGui::Separator();
