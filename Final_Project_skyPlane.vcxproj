@@ -841,6 +841,7 @@
     <None Include="imgui.ini" />
     <None Include="light.frag" />
     <None Include="light.vert" />
+    <None Include="README.md" />
     <None Include="skybox.frag" />
     <None Include="skybox.vert" />
   </ItemGroup>
